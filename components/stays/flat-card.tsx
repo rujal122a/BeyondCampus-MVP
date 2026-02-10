@@ -1,27 +1,19 @@
 "use client";
 
-import { Users, Bed, Lock, Unlock } from "lucide-react";
+import { MapPin, Users, ArrowRight, Bed, Map } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { LobbyMember } from "@/lib/mockData";
+import { Flat } from "@/lib/mockData";
 
-interface FlatProps {
-    flat: {
-        id: number;
-        title: string;
-        location: string;
-        price: number;
-        type: string;
-        images: string[]; // Keep as array for future carousel
-        tags: string[];
-        lobby: LobbyMember[];
-        isLocked: boolean;
-    };
+interface FlatCardProps {
+    flat: Flat;
+    onShowOnMap?: () => void;
 }
 
-export function FlatCard({ flat }: FlatProps) {
+export function FlatCard({ flat, onShowOnMap }: FlatCardProps) {
     const router = useRouter();
 
     const handleCardClick = () => {
@@ -77,20 +69,18 @@ export function FlatCard({ flat }: FlatProps) {
                     ))}
                 </div>
 
-                {/* Live Lobby Section */}
+                {/* Interested People Section */}
                 <div className="mt-auto pt-4 border-t border-slate-100">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                            <Users className="w-3 h-3" /> Live Lobby ({flat.lobby.length}/4)
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            Interested
                         </span>
-                        {flat.isLocked ? (
-                            <span className="text-xs text-red-500 flex items-center gap-1"><Lock className="w-3 h-3" /> Full</span>
-                        ) : (
-                            <span className="text-xs text-green-500 flex items-center gap-1"><Unlock className="w-3 h-3" /> Joining...</span>
-                        )}
+                        <span className="text-xs font-bold text-slate-900">
+                            {flat.lobby.length} people
+                        </span>
                     </div>
 
-                    <div className="flex -space-x-2 overflow-hidden mb-4 pl-1">
+                    <div className="flex -space-x-2 overflow-hidden pl-1 mb-4">
                         {flat.lobby.map((member) => (
                             <div key={member.id} className="relative group/avatar cursor-help">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-aurora-purple to-aurora-blue p-[2px] ring-2 ring-white">
@@ -100,23 +90,34 @@ export function FlatCard({ flat }: FlatProps) {
                                 </div>
                                 {/* Tooltip */}
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover/avatar:opacity-100 transition-opacity pointer-events-none z-10">
-                                    {member.name} • {member.tags[0]}
+                                    {member.name}
                                 </div>
                             </div>
                         ))}
-                        {!flat.isLocked && (
-                            <button className="w-8 h-8 rounded-full bg-slate-100 ring-2 ring-white flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors">
-                                +
-                            </button>
+                        {flat.lobby.length === 0 && (
+                            <span className="text-xs text-slate-400 italic pl-1">Be the first to show interest</span>
                         )}
                     </div>
 
-                    <button
-                        onClick={handleJoinClick}
-                        className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-medium text-sm hover:bg-slate-800 active:scale-95 transition-all shadow-lg shadow-slate-900/20"
-                    >
-                        Join Lobby
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {onShowOnMap && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onShowOnMap();
+                                }}
+                                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 transition-colors flex items-center gap-1.5"
+                            >
+                                <Map className="w-3.5 h-3.5" /> Map
+                            </button>
+                        )}
+                        <button
+                            onClick={() => router.push(`/stays/${flat.id}`)}
+                            className="flex-1 px-4 py-2 rounded-xl text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20"
+                        >
+                            View Details <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </GlassCard>

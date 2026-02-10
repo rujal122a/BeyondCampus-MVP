@@ -1,13 +1,20 @@
 
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { MapPin, Users, Wifi, Wind, Shield, Coffee, ArrowLeft, Share2, Heart, Lock, Unlock, LucideIcon, Zap } from "lucide-react";
+import { MapPin, Users, Wifi, Wind, Shield, Coffee, ArrowLeft, Share2, Heart, Lock, Unlock, LucideIcon, Zap, MessageCircle, UserPlus } from "lucide-react";
 import { FLATS } from "@/lib/mockData";
 import { GlassCard } from "@/components/ui/glass-card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+
+const MiniMap = dynamic(() => import("@/components/map/mini-map"), {
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-slate-100 animate-pulse rounded-2xl" />
+});
 
 const AMENITY_ICONS: Record<string, LucideIcon> = {
     "Wi-Fi": Wifi,
@@ -21,17 +28,21 @@ export default function FlatDetailsPage() {
     const { id } = useParams();
     const router = useRouter();
 
+    const [isInterested, setIsInterested] = useState(false);
+
     // Derived state (no useEffect needed)
     const flat = FLATS.find((f) => f.id === Number(id));
 
     if (!flat) return <div className="min-h-screen flex items-center justify-center">Flat not found</div>;
 
-    const handleJoinLobby = () => {
-        if (flat.isLocked) {
-            toast.error("Lobby is full!", { description: "You cannot join this flat right now." });
-            return;
+    const handleToggleInterest = () => {
+        if (isInterested) {
+            setIsInterested(false);
+            toast.info("Removed from list", { description: "You are no longer on the interested list." });
+        } else {
+            setIsInterested(true);
+            toast.success("You're on the list!", { description: "You can now connect with others." });
         }
-        toast.success("Joined Lobby!", { description: `You have drafted into ${flat.title}.` });
     };
 
     return (
@@ -113,44 +124,58 @@ export default function FlatDetailsPage() {
                         </div>
                     </GlassCard>
 
-                    <GlassCard className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 border-purple-100">
-                        <div className="flex items-center justify-between mb-4">
+                    <GlassCard className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 border-purple-100 relative overflow-hidden">
+                        <div className="flex items-center justify-between mb-6 relative z-10">
                             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                <Users className="w-5 h-5 text-purple-600" /> Live Lobby
+                                <Users className="w-5 h-5 text-purple-600" /> Interested People
                             </h3>
-                            <span className="text-sm font-medium text-slate-500">{flat.lobby.length}/4 Joined</span>
+                            <span className="text-sm font-medium text-slate-500">{flat.lobby.length} Interested</span>
                         </div>
 
-                        <div className="space-y-3 mb-6">
-                            {flat.lobby.map(member => (
-                                <div key={member.id} className="flex items-center justify-between bg-white/60 p-2 rounded-xl">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700">
-                                            {member.avatar}
+                        <div className="relative">
+                            <div className={cn("space-y-4 transition-all duration-500", !isInterested && "blur-md opacity-50 pointer-events-none select-none")}>
+                                {flat.lobby.map(member => (
+                                    <div key={member.id} className="flex items-center justify-between bg-white/60 p-3 rounded-xl shadow-sm border border-white/50">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-sm font-bold text-slate-700">
+                                                {member.avatar}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-slate-900">{member.name}</p>
+                                                <p className="text-xs text-slate-500">{member.tags[0]} • {member.tags[1]}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-slate-900">{member.name}</p>
-                                            <p className="text-xs text-slate-500">{member.tags.join(" • ")}</p>
-                                        </div>
+
+                                        <button className="px-4 py-2 rounded-full bg-white text-slate-900 text-xs font-bold border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-1.5 shadow-sm">
+                                            <MessageCircle className="w-3.5 h-3.5 text-purple-600" /> Chat
+                                        </button>
                                     </div>
-                                    <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">{member.status}</span>
-                                </div>
-                            ))}
-                            {flat.lobby.length === 0 && <p className="text-sm text-slate-500 italic">No one has joined yet. Be the first!</p>}
-                        </div>
+                                ))}
+                                {flat.lobby.length === 0 && <p className="text-sm text-slate-500 italic">No one has shown interest yet.</p>}
 
-                        <button
-                            onClick={handleJoinLobby}
-                            disabled={flat.isLocked}
-                            className={cn(
-                                "w-full py-4 rounded-xl font-bold text-lg shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2",
-                                flat.isLocked
-                                    ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-                                    : "bg-slate-900 text-white hover:bg-slate-800"
+                                {isInterested && (
+                                    <div className="pt-4 flex justify-center">
+                                        <button
+                                            onClick={handleToggleInterest}
+                                            className="text-xs text-slate-400 hover:text-slate-600 underline decoration-slate-300 underline-offset-4 transition-colors"
+                                        >
+                                            No longer interested? Leave list
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {!isInterested && (
+                                <div className="absolute inset-0 flex items-center justify-center z-20">
+                                    <button
+                                        onClick={handleToggleInterest}
+                                        className="px-6 py-3 rounded-full bg-slate-900 text-white font-bold shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 animate-in fade-in zoom-in duration-300"
+                                    >
+                                        <UserPlus className="w-5 h-5" /> I'm Interested
+                                    </button>
+                                </div>
                             )}
-                        >
-                            {flat.isLocked ? <><Lock className="w-5 h-5" /> Lobby Full</> : <><Unlock className="w-5 h-5" /> Join Lobby</>}
-                        </button>
+                        </div>
                     </GlassCard>
                 </div>
             </div>

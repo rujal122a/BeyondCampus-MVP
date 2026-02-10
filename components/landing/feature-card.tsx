@@ -28,7 +28,7 @@ export function FeatureCard({ icon: Icon, title, description, delay = 0, color }
             transition={{ delay, duration: 0.5 }}
             className="h-full"
         >
-            <GlassCard className="h-full group hover:border-white/80 transition-colors">
+            <GlassCard className="h-full group hover:border-slate-300 transition-colors">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-300 ${colors[color]}`}>
                     <Icon className="w-6 h-6" />
                 </div>

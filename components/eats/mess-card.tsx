@@ -1,11 +1,11 @@
 "use client";
 
-import { Star, UtensilsCrossed, CheckCircle2 } from "lucide-react";
+import { Star, UtensilsCrossed, CheckCircle2, Map } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import Image from "next/image";
 import { toast } from "sonner";
 
-interface MessProps {
+interface MessCardProps {
     vendor: {
         id: number;
         name: string;
@@ -15,10 +15,12 @@ interface MessProps {
         todayMenu: string[];
         image: string;
         deliveryTime?: string;
+        coordinates?: { lat: number; lng: number };
     };
+    onShowOnMap?: () => void;
 }
 
-export function MessCard({ vendor }: MessProps) {
+export function MessCard({ vendor, onShowOnMap }: MessCardProps) {
     const handleViewPlans = () => {
         toast.info(`Viewing plans for ${vendor.name}`, {
             description: "Subscription flows are coming soon!",
@@ -66,12 +68,25 @@ export function MessCard({ vendor }: MessProps) {
                     </ul>
                 </div>
 
-                <button
-                    onClick={handleViewPlans}
-                    className="w-full py-2.5 rounded-xl border-2 border-slate-900 text-slate-900 font-bold text-sm hover:bg-slate-900 hover:text-white transition-all active:scale-95"
-                >
-                    View Plans
-                </button>
+                <div className="mt-auto flex gap-2">
+                    {onShowOnMap && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onShowOnMap();
+                            }}
+                            className="px-3 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-100 hover:text-slate-900 transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                        >
+                            <Map className="w-4 h-4" />
+                        </button>
+                    )}
+                    <button
+                        onClick={handleViewPlans}
+                        className="flex-1 py-2.5 rounded-xl border-2 border-slate-900 text-slate-900 font-bold text-sm hover:bg-slate-900 hover:text-white transition-all active:scale-95"
+                    >
+                        View Plans
+                    </button>
+                </div>
             </div>
         </GlassCard>
     );

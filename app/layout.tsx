@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "OffCampus | Life happens OffCampus",
-  description: "Find flats, roommates, and mess services. The ultimate student lifestyle OS.",
+  title: "BeyondCampus | Life happens BeyondCampus",
+  description: "Find flats, roommates, and food services. The ultimate community living OS.",
 };
 
 import { Navbar } from "@/components/navbar";

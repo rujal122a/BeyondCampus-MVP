@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -24,7 +23,7 @@ export function Navbar() {
         >
             <div className="pointer-events-auto backdrop-blur-xl bg-white/60 border border-white/50 rounded-full px-6 py-3 shadow-lg flex items-center justify-between">
                 <Link href="/" className="font-bold text-lg tracking-tight text-slate-900 mr-8">
-                    OffCampus.
+                    BeyondCampus.
                 </Link>
 
                 <div className="flex items-center gap-2">
