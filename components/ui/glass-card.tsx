@@ -1,28 +1,23 @@
-"use client";
-
-import { motion, HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { ReactNode } from "react";
 
-interface GlassCardProps extends HTMLMotionProps<"div"> {
-    children: React.ReactNode;
+interface GlassCardProps {
+    children: ReactNode;
     className?: string;
-    hoverEffect?: boolean;
+    onClick?: () => void;
 }
 
-export function GlassCard({ children, className, hoverEffect = true, ...props }: GlassCardProps) {
+export function GlassCard({ children, className, onClick }: GlassCardProps) {
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={hoverEffect ? { y: -5, boxShadow: "0 20px 40px -10px rgba(0,0,0,0.1)" } : {}}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+        <div
+            onClick={onClick}
             className={cn(
-                "backdrop-blur-xl bg-white/40 border border-white/50 rounded-3xl p-6 shadow-sm",
+                "bg-white rounded-3xl border border-slate-100 shadow-sm p-6",
+                onClick && "cursor-pointer",
                 className
             )}
-            {...props}
         >
             {children}
-        </motion.div>
+        </div>
     );
 }

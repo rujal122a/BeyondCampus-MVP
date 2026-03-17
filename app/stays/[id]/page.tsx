@@ -1,182 +1,282 @@
-
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
-import { MapPin, Users, Wifi, Wind, Shield, Coffee, ArrowLeft, Share2, Heart, Lock, Unlock, LucideIcon, Zap, MessageCircle, UserPlus } from "lucide-react";
-import { FLATS } from "@/lib/mockData";
-import { GlassCard } from "@/components/ui/glass-card";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/store/authStore";
+import { motion } from "framer-motion";
+import { MapPin, Bed, Tag, ShieldAlert, Phone, ArrowLeft, Loader2, IndianRupee, Image as ImageIcon } from "lucide-react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 
-const MiniMap = dynamic(() => import("@/components/map/mini-map"), {
+const MapView = dynamic(() => import("@/components/map/map-view"), {
     ssr: false,
-    loading: () => <div className="w-full h-full bg-slate-100 animate-pulse rounded-2xl" />
+    loading: () => <div className="h-full w-full bg-slate-100 animate-pulse rounded-2xl"></div>
 });
 
-const AMENITY_ICONS: Record<string, LucideIcon> = {
-    "Wi-Fi": Wifi,
-    "AC": Wind,
-    "Power Backup": Zap,
-    "Security": Shield,
-    "Food": Coffee,
-};
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200";
 
-export default function FlatDetailsPage() {
-    const { id } = useParams();
+interface ListingDetail {
+    id: string;
+    title: string;
+    description: string;
+    location: string;
+    price: number;
+    type: string;
+    images: string[];
+    amenities: string[];
+    houseRules: string[];
+    distanceToCampus: string;
+    owner: {
+        id: string;
+        full_name: string;
+        avatar_url: string;
+        role: string;
+    } | null;
+}
+
+export default function ListingDetailsPage() {
+    const params = useParams();
     const router = useRouter();
+    const { user } = useAuthStore();
+    
+    const [listing, setListing] = useState<ListingDetail | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-    const [isInterested, setIsInterested] = useState(false);
+    useEffect(() => {
+        async function fetchListingDetails() {
+            if (!params.id) return;
 
-    // Derived state (no useEffect needed)
-    const flat = FLATS.find((f) => f.id === Number(id));
+            try {
+                // Fetch listing
+                const { data: listingData, error: listingError } = await supabase
+                    .from('listings')
+                    .select('*')
+                    .eq('id', params.id)
+                    .single();
 
-    if (!flat) return <div className="min-h-screen flex items-center justify-center">Flat not found</div>;
+                if (listingError || !listingData) throw listingError || new Error("Listing not found");
 
-    const handleToggleInterest = () => {
-        if (isInterested) {
-            setIsInterested(false);
-            toast.info("Removed from list", { description: "You are no longer on the interested list." });
-        } else {
-            setIsInterested(true);
-            toast.success("You're on the list!", { description: "You can now connect with others." });
+                // Fetch owner profile
+                let ownerProfile = null;
+                const { data: ownerData } = await supabase
+                    .from('profiles')
+                    .select('id, full_name, avatar_url, role')
+                    .eq('id', listingData.lister_id)
+                    .single();
+                
+                if (ownerData) {
+                    ownerProfile = ownerData;
+                }
+
+                setListing({
+                    id: listingData.id,
+                    title: listingData.title,
+                    description: listingData.description,
+                    location: listingData.location,
+                    price: listingData.rent_price || 0,
+                    type: listingData.type || "2BHK",
+                    images: listingData.image_urls && listingData.image_urls.length > 0 ? listingData.image_urls : [FALLBACK_IMAGE],
+                    amenities: listingData.amenities || [],
+                    houseRules: listingData.house_rules || [],
+                    distanceToCampus: listingData.distance_from_campus || "N/A",
+                    owner: ownerProfile
+                });
+
+            } catch (error) {
+                console.error("Error fetching listing details:", error);
+            } finally {
+                setIsLoading(false);
+            }
         }
-    };
+
+        fetchListingDetails();
+    }, [params.id]);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            </div>
+        );
+    }
+
+    if (!listing) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
+                <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full">
+                    <h1 className="text-2xl font-bold text-slate-900 mb-2">Listing not found</h1>
+                    <p className="text-slate-500 mb-6">This property may have been removed or is no longer available.</p>
+                    <button onClick={() => router.push('/stays')} className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition w-full">
+                        Back to Stays
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="container mx-auto px-4 pb-20">
-            <button
-                onClick={() => router.back()}
-                className="mb-6 flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
-            >
-                <ArrowLeft className="w-4 h-4" /> Back to Stays
-            </button>
+        <div className="min-h-screen bg-slate-50 py-8 px-4 pb-20">
+            <div className="max-w-6xl mx-auto space-y-6">
+                
+                {/* Back Button */}
+                <button 
+                    onClick={() => router.back()}
+                    className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-medium transition-colors mb-2"
+                >
+                    <ArrowLeft className="w-4 h-4" /> Back to listings
+                </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Col: Images */}
-                <div className="space-y-4">
-                    <div className="relative h-[400px] w-full rounded-3xl overflow-hidden shadow-lg">
-                        <Image
-                            src={flat.images[0]}
-                            alt={flat.title}
-                            fill
-                            className="object-cover hover:scale-105 transition-transform duration-700"
-                        />
-                        <div className="absolute top-4 right-4 flex gap-2">
-                            <button className="p-2 rounded-full bg-white/30 backdrop-blur-md text-white hover:bg-white/50 transition-colors">
-                                <Share2 className="w-5 h-5" />
-                            </button>
-                            <button className="p-2 rounded-full bg-white/30 backdrop-blur-md text-white hover:bg-white/50 transition-colors">
-                                <Heart className="w-5 h-5" />
-                            </button>
+                {/* Hero / Header */}
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-2">{listing.title}</h1>
+                        <div className="flex items-center gap-2 text-slate-500 font-medium text-lg">
+                            <MapPin className="w-5 h-5" /> {listing.location} 
+                            <span className="text-slate-300">•</span>
+                            <span>{listing.distanceToCampus} from campus</span>
                         </div>
-                    </div>
-                    {flat.images.length > 1 && (
-                        <div className="grid grid-cols-3 gap-4">
-                            {flat.images.slice(1).map((img, i) => (
-                                <div key={i} className="relative h-24 rounded-xl overflow-hidden cursor-pointer">
-                                    <Image src={img} alt="Gallery" fill className="object-cover hover:scale-110 transition-transform" />
-                                </div>
-                            ))}
+                    </motion.div>
+                    
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-end shrink-0">
+                        <div className="text-4xl font-black text-indigo-600 tracking-tight">
+                            ₹{listing.price.toLocaleString()}
+                            <span className="text-lg text-slate-500 font-semibold align-baseline">/mo</span>
                         </div>
-                    )}
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 shadow-sm rounded-full text-sm font-bold mt-2 text-slate-700">
+                            <Bed className="w-4 h-4 text-slate-400" /> {listing.type}
+                        </div>
+                    </motion.div>
                 </div>
 
-                {/* Right Col: Details */}
-                <div className="space-y-8">
-                    <div>
-                        <div className="flex justify-between items-start mb-2">
-                            <h1 className="text-3xl font-bold text-slate-900">{flat.title}</h1>
-                            <span className="text-2xl font-bold text-slate-900">₹{flat.price.toLocaleString()}</span>
+                {/* Image Gallery */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-1 md:grid-cols-4 gap-4 h-[400px] md:h-[500px]">
+                    <div className="md:col-span-3 bg-slate-200 rounded-3xl overflow-hidden relative group shadow-sm border border-slate-200">
+                        <img 
+                            src={listing.images[activeImageIndex]} 
+                            alt="Property" 
+                            className="w-full h-full object-cover transition-opacity duration-300" 
+                        />
+                        {listing.images.length > 1 && (
+                            <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2">
+                                <ImageIcon className="w-3.5 h-3.5" /> {activeImageIndex + 1}/{listing.images.length}
+                            </div>
+                        )}
+                    </div>
+                    <div className="hidden md:flex flex-col gap-4 overflow-y-auto pr-2 no-scrollbar">
+                        {listing.images.map((img, idx) => (
+                            <button 
+                                key={idx}
+                                onClick={() => setActiveImageIndex(idx)}
+                                className={`w-full h-32 rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${activeImageIndex === idx ? 'border-indigo-600 scale-[1.02] shadow-md' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                            >
+                                <img src={img} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
+                            </button>
+                        ))}
+                    </div>
+                </motion.div>
+
+                {/* Mobile Thumbnails */}
+                {listing.images.length > 1 && (
+                    <div className="flex md:hidden gap-3 overflow-x-auto pb-2 snap-x">
+                        {listing.images.map((img, idx) => (
+                            <button 
+                                key={idx}
+                                onClick={() => setActiveImageIndex(idx)}
+                                className={`w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all shrink-0 snap-center ${activeImageIndex === idx ? 'border-indigo-600' : 'border-transparent opacity-70'}`}
+                            >
+                                <img src={img} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
+                    {/* Main Content Area */}
+                    <div className="lg:col-span-2 space-y-8">
+                        <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
+                            <h2 className="text-xl font-bold text-slate-900 mb-4">About this place</h2>
+                            <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{listing.description}</p>
                         </div>
-                        <div className="flex items-center gap-2 text-slate-500 mb-4">
-                            <MapPin className="w-4 h-4" />
-                            {flat.location} • {flat.distanceToCampus} from campus
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {flat.tags.map(tag => (
-                                <span key={tag} className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-sm font-medium">
-                                    {tag}
-                                </span>
-                            ))}
+
+                        {listing.amenities.length > 0 && (
+                            <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
+                                <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2"><Tag className="w-5 h-5 text-indigo-500" /> Amenities</h2>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-2">
+                                    {listing.amenities.map(amenity => (
+                                        <div key={amenity} className="flex items-center gap-2 text-slate-700 font-medium">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                            {amenity}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {listing.houseRules.length > 0 && (
+                            <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
+                                <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-orange-500" /> House Rules</h2>
+                                <ul className="space-y-3">
+                                    {listing.houseRules.map(rule => (
+                                        <li key={rule} className="flex items-center gap-3 text-slate-600 font-medium bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100">
+                                            {rule}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        
+                        {/* Map Area placeholder */}
+                        <div className="bg-white rounded-3xl p-2 shadow-sm border border-slate-200 h-[300px]">
+                            <MapView type="stays" />
                         </div>
                     </div>
 
-                    <GlassCard className="p-6">
-                        <h3 className="text-lg font-bold text-slate-900 mb-4">About this place</h3>
-                        <p className="text-slate-600 leading-relaxed mb-6">
-                            {flat.description}
-                        </p>
-
-                        <h4 className="font-bold text-slate-900 mb-3">Amenities</h4>
-                        <div className="grid grid-cols-2 gap-3">
-                            {flat.amenities?.map(amenity => {
-                                const Icon = AMENITY_ICONS[amenity] || Shield;
-                                return (
-                                    <div key={amenity} className="flex items-center gap-2 text-slate-600 text-sm">
-                                        <Icon className="w-4 h-4 text-slate-400" />
-                                        {amenity}
+                    {/* Sidebar Area */}
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200 sticky top-28">
+                            
+                            <h3 className="font-bold text-slate-900 mb-4 uppercase tracking-wider text-sm">Listed By</h3>
+                            
+                            {listing.owner ? (
+                                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+                                    <img src={listing.owner.avatar_url || "https://avatar.vercel.sh/student"} alt={listing.owner.full_name} className="w-14 h-14 rounded-full border-2 border-indigo-100 object-cover" />
+                                    <div>
+                                        <div className="font-bold text-slate-900">{listing.owner.full_name}</div>
+                                        <div className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 inline-block px-2 py-0.5 rounded-full mt-1">Verified Owner</div>
                                     </div>
-                                )
-                            })}
-                        </div>
-                    </GlassCard>
-
-                    <GlassCard className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 border-purple-100 relative overflow-hidden">
-                        <div className="flex items-center justify-between mb-6 relative z-10">
-                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                <Users className="w-5 h-5 text-purple-600" /> Interested People
-                            </h3>
-                            <span className="text-sm font-medium text-slate-500">{flat.lobby.length} Interested</span>
-                        </div>
-
-                        <div className="relative">
-                            <div className={cn("space-y-4 transition-all duration-500", !isInterested && "blur-md opacity-50 pointer-events-none select-none")}>
-                                {flat.lobby.map(member => (
-                                    <div key={member.id} className="flex items-center justify-between bg-white/60 p-3 rounded-xl shadow-sm border border-white/50">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-sm font-bold text-slate-700">
-                                                {member.avatar}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-slate-900">{member.name}</p>
-                                                <p className="text-xs text-slate-500">{member.tags[0]} • {member.tags[1]}</p>
-                                            </div>
-                                        </div>
-
-                                        <button className="px-4 py-2 rounded-full bg-white text-slate-900 text-xs font-bold border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-1.5 shadow-sm">
-                                            <MessageCircle className="w-3.5 h-3.5 text-purple-600" /> Chat
-                                        </button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+                                    <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200"></div>
+                                    <div>
+                                        <div className="font-bold text-slate-900">Anonymous Owner</div>
+                                        <div className="text-xs text-slate-500">Member</div>
                                     </div>
-                                ))}
-                                {flat.lobby.length === 0 && <p className="text-sm text-slate-500 italic">No one has shown interest yet.</p>}
-
-                                {isInterested && (
-                                    <div className="pt-4 flex justify-center">
-                                        <button
-                                            onClick={handleToggleInterest}
-                                            className="text-xs text-slate-400 hover:text-slate-600 underline decoration-slate-300 underline-offset-4 transition-colors"
-                                        >
-                                            No longer interested? Leave list
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {!isInterested && (
-                                <div className="absolute inset-0 flex items-center justify-center z-20">
-                                    <button
-                                        onClick={handleToggleInterest}
-                                        className="px-6 py-3 rounded-full bg-slate-900 text-white font-bold shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 animate-in fade-in zoom-in duration-300"
-                                    >
-                                        <UserPlus className="w-5 h-5" /> I'm Interested
-                                    </button>
                                 </div>
                             )}
+
+                            {user ? (
+                                <button className="w-full py-4 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition shadow-xl shadow-slate-900/20 flex items-center justify-center gap-2 active:scale-95">
+                                    <Phone className="w-5 h-5"/> Contact Owner
+                                </button>
+                            ) : (
+                                <div className="text-center">
+                                    <p className="text-sm font-medium text-slate-500 mb-3">Please sign in to contact the owner directly.</p>
+                                    <Link href="/login">
+                                        <button className="w-full py-3 rounded-xl bg-slate-100 text-slate-900 font-bold hover:bg-slate-200 transition">
+                                            Log in to Connect
+                                        </button>
+                                    </Link>
+                                </div>
+                            )}
+                            
+                            <p className="text-xs text-center text-slate-400 mt-4 font-medium flex items-center justify-center gap-1.5">
+                                <ShieldAlert className="w-3.5 h-3.5" /> Ensure you physically verify the property before making any payments.
+                            </p>
                         </div>
-                    </GlassCard>
+                    </div>
                 </div>
             </div>
         </div>

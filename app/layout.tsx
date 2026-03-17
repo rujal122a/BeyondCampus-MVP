@@ -1,18 +1,19 @@
 
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Navbar } from "@/components/navbar";
+import { AuthProvider } from "@/components/AuthProvider";
+import { Toaster } from "sonner";
+import Footer from "@/components/footer";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "BeyondCampus | Life happens BeyondCampus",
-  description: "Find flats, roommates, and food services. The ultimate community living OS.",
+  title: "BeyondCampus | Student Housing & Services",
+  description: "Find flats, roommates, and food services. The ultimate community living platform for students.",
 };
-
-import { Navbar } from "@/components/navbar";
-import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -21,12 +22,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={cn(inter.variable, "font-sans antialiased")}>
-        <Navbar />
-        <main className="pt-24 pb-12 min-h-screen">
-          {children}
-        </main>
-        <Toaster position="bottom-center" richColors />
+      <body className={cn(outfit.variable, "font-sans antialiased bg-brand-offwhite text-brand-black")}>
+        <AuthProvider>
+          <Navbar />
+          <main className="pt-24 pb-0 min-h-screen">
+            {children}
+          </main>
+          <Footer />
+          <Toaster position="bottom-center" richColors />
+        </AuthProvider>
       </body>
     </html>
   );

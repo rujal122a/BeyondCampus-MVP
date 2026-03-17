@@ -1,59 +1,100 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
-@theme {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  
-  --color-aurora-purple: #A78BFA;
-  --color-aurora-orange: #FB923C;
-  --color-aurora-blue: #60A5FA;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  --animate-blob: blob 7s infinite;
+@layer base {
+  :root {
+    --color-brand-purple: #5B6AFF;
+    --color-brand-purple-dark: #3D4ADB;
+    --color-brand-green: #7EE8A2;
+    --color-brand-black: #1E2130;
+    --color-brand-offwhite: #E8EDF4;
+    --color-brand-gray: #D1D9E6;
 
-  @keyframes blob {
-    0% {
-      transform: translate(0px, 0px) scale(1);
-    }
-    33% {
-      transform: translate(30px, -50px) scale(1.1);
-    }
-    66% {
-      transform: translate(-20px, 20px) scale(0.9);
-    }
-    100% {
-      transform: translate(0px, 0px) scale(1);
-    }
+    /* Legacy compat */
+    --background: #E8EDF4;
+    --foreground: #1E2130;
   }
 }
 
-:root {
-  --background: #f8fafc; /* slate-50 */
-  --foreground: #0f172a; /* slate-900 */
+@layer utilities {
+  /* Grainy texture overlay — apply as class on top of gradients */
+  .grain {
+    position: relative;
+  }
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: inherit;
+  }
+
+  /* Aurora mesh background — soft floating blobs like the Salford template */
+  .aurora-bg {
+    background-color: #E8EDF4;
+    background-image:
+      radial-gradient(ellipse 60% 50% at 20% 40%, rgba(176, 196, 222, 0.5) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 75% 25%, rgba(173, 216, 230, 0.45) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 40% at 50% 80%, rgba(200, 180, 230, 0.3) 0%, transparent 60%),
+      radial-gradient(ellipse 30% 30% at 85% 75%, rgba(180, 220, 200, 0.2) 0%, transparent 50%);
+  }
+
+  /* Mesh glow — subtle colored orb for dark sections */
+  .mesh-glow {
+    position: relative;
+  }
+  .mesh-glow::before {
+    content: "";
+    position: absolute;
+    top: -20%;
+    right: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(91, 106, 255, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Badge / pill chip helper */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold border;
+  }
+
+  /* No scrollbar utility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
-/* Aurora Background */
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Global body */
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+  background-color: var(--color-brand-offwhite);
+  color: var(--color-brand-black);
+  font-family: "Outfit", "Inter", sans-serif;
   position: relative;
   overflow-x: hidden;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
-body::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: 
-    radial-gradient(circle at 15% 50%, var(--color-aurora-purple), transparent 25%),
-    radial-gradient(circle at 85% 30%, var(--color-aurora-orange), transparent 25%),
-    radial-gradient(circle at 50% 80%, var(--color-aurora-blue), transparent 25%);
-  filter: blur(100px);
-  opacity: 0.5;
-  z-index: -1;
-  animation: blob 20s infinite alternate;
+/* Selection color */
+::selection {
+  background-color: rgba(91, 106, 255, 0.2);
+  color: #1E2130;
 }

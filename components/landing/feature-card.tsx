@@ -15,9 +15,9 @@ interface FeatureCardProps {
 
 export function FeatureCard({ icon: Icon, title, description, delay = 0, color }: FeatureCardProps) {
     const colors = {
-        purple: "bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white",
+        purple: "bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white",
         orange: "bg-orange-100 text-orange-600 group-hover:bg-orange-600 group-hover:text-white",
-        blue: "bg-blue-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white",
+        blue: "bg-sky-100 text-sky-600 group-hover:bg-sky-600 group-hover:text-white",
     };
 
     return (
