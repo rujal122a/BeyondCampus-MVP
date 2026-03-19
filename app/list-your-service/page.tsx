@@ -214,9 +214,9 @@ export default function ListYourServicePage() {
         <div className="mx-auto max-w-3xl">
           <div className="mb-8 flex items-center gap-3">
             {[1, 2, 3].map((item) => (
-              <div key={item} className="flex flex-1 items-center gap-3">
+              <div key={item} className={`flex items-center gap-3 ${item < 3 ? "flex-1" : ""}`}>
                 <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-medium ${
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-medium ${
                     step >= item
                       ? "border-surface bg-surface text-white"
                       : "border-border-subtle bg-white/25 text-text-secondary"
