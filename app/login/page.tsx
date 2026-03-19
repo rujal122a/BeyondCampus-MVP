@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import { BedDouble, Loader2, Lock, LogIn, Mail, ShieldCheck, Users } from "lucid
 import { toast } from "sonner";
 import { getAuthIntentConfig, getOnboardingPathForIntent, parseAuthIntent } from "@/lib/auth-intent";
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -134,5 +134,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-text-secondary" /></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

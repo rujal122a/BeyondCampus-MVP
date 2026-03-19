@@ -353,7 +353,7 @@ export default function ListingDetailsPage() {
 
                 <div className="mt-8 flex flex-col gap-3">
                   {!user ? (
-                    <Link href={`/login?next=/stays/${params.id.toString()}`} className="w-full bg-white text-surface hover:bg-white/90 py-3.5 px-6 rounded-full font-bold text-base transition-all shadow-lg hover:shadow-xl flex items-center justify-center text-center">
+                    <Link href={`/login?next=/stays/${String(params.id)}`} className="w-full bg-white text-surface hover:bg-white/90 py-3.5 px-6 rounded-full font-bold text-base transition-all shadow-lg hover:shadow-xl flex items-center justify-center text-center">
                       Log in to connect
                     </Link>
                   ) : detail.currentUserProfile?.role === 'seeker' ? (

@@ -2,11 +2,12 @@
 
 import { ArrowRight, MailCheck } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { getAuthIntentConfig, parseAuthIntent } from "@/lib/auth-intent";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const intent = parseAuthIntent(searchParams.get("intent"));
 
@@ -38,5 +39,13 @@ export default function VerifyEmailPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center p-8">Loading...</div>}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
