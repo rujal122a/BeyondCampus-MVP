@@ -28,6 +28,15 @@ export function FlatCard({ flat, onShowOnMap }: FlatCardProps) {
     setShowLoginPrompt(true);
   };
 
+  const handleShowOnMap = () => {
+    if (user) {
+      if (onShowOnMap) onShowOnMap();
+      return;
+    }
+
+    setShowLoginPrompt(true);
+  };
+
   return (
     <>
       <article className="frame-panel overflow-hidden rounded-5xl">
@@ -36,7 +45,7 @@ export function FlatCard({ flat, onShowOnMap }: FlatCardProps) {
             src={flat.imageUrl}
             alt={flat.title}
             fill
-            sizes="(max-width: 768px) 100vw, 33vw"
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
             unoptimized={isSupabaseStorageUrl(flat.imageUrl)}
             className="object-cover"
           />
@@ -82,7 +91,7 @@ export function FlatCard({ flat, onShowOnMap }: FlatCardProps) {
 
           <div className="flex gap-3">
             {onShowOnMap ? (
-              <button type="button" onClick={onShowOnMap} className="btn-secondary flex-1">
+              <button type="button" onClick={handleShowOnMap} className="btn-secondary flex-1">
                 <Map className="h-4 w-4" />
                 Show on map
               </button>

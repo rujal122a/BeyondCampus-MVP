@@ -29,7 +29,7 @@ function SignupContent() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        emailRedirectTo: `https://beyond-campus-mvp.vercel.app/auth/callback?next=${encodeURIComponent(nextPath)}`,
       },
     });
 

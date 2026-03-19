@@ -55,7 +55,6 @@ const COMMON_RULES = [
   "Vegetarian only",
   "Girls only",
   "Boys only",
-  "Family only",
 ];
 
 const STEPS_META = [
@@ -269,11 +268,10 @@ export default function ListYourPropertyPage() {
             {[1, 2, 3].map((item) => (
               <div key={item} className={`flex items-center gap-3 ${item < 3 ? "flex-1" : ""}`}>
                 <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-medium ${
-                    step >= item
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-medium ${step >= item
                       ? "border-surface bg-surface text-white"
                       : "border-border-subtle bg-white/25 text-text-secondary"
-                  }`}
+                    }`}
                 >
                   {item}
                 </div>
@@ -419,11 +417,10 @@ export default function ListYourPropertyPage() {
                             type="button"
                             key={amenity}
                             onClick={() => toggleItem(amenity, setAmenities)}
-                            className={`rounded-full px-4 py-2 text-sm transition ${
-                              amenities.includes(amenity)
+                            className={`rounded-full px-4 py-2 text-sm transition ${amenities.includes(amenity)
                                 ? "bg-surface text-white"
                                 : "border border-border-subtle/35 bg-white/25 text-text-secondary"
-                            }`}
+                              }`}
                           >
                             {amenity}
                           </button>
@@ -442,11 +439,10 @@ export default function ListYourPropertyPage() {
                             type="button"
                             key={rule}
                             onClick={() => toggleItem(rule, setHouseRules)}
-                            className={`rounded-full px-4 py-2 text-sm transition ${
-                              houseRules.includes(rule)
+                            className={`rounded-full px-4 py-2 text-sm transition ${houseRules.includes(rule)
                                 ? "bg-surface-muted text-white"
                                 : "border border-border-subtle/35 bg-white/25 text-text-secondary"
-                            }`}
+                              }`}
                           >
                             {rule}
                           </button>
