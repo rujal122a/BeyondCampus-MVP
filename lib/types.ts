@@ -23,6 +23,7 @@ export interface ListingRecord {
   title: string;
   location: string;
   rent_price: number | null;
+  deposit_amount?: number | null;
   type: string | null;
   description: string | null;
   distance_from_campus: string | null;
