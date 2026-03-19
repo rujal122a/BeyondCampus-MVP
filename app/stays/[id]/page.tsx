@@ -1,284 +1,390 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
-import { motion } from "framer-motion";
-import { MapPin, Bed, Tag, ShieldAlert, Phone, ArrowLeft, Loader2, IndianRupee, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, BedDouble, Loader2, MapPin, Phone, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { FALLBACK_PROPERTY_IMAGE } from "@/lib/data-mappers";
+import { isSupabaseStorageUrl } from "@/lib/image-utils";
+import type { ListingRecord, MapItem, ProfileRecord } from "@/lib/types";
+import { toast } from "sonner";
+import InterestedPeople from "@/components/stays/interested-people";
 
 const MapView = dynamic(() => import("@/components/map/map-view"), {
-    ssr: false,
-    loading: () => <div className="h-full w-full bg-slate-100 animate-pulse rounded-2xl"></div>
+  ssr: false,
+  loading: () => <div className="frame-panel h-[320px] animate-pulse rounded-6xl" />,
 });
 
-const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200";
-
-interface ListingDetail {
-    id: string;
-    title: string;
-    description: string;
-    location: string;
-    price: number;
-    type: string;
-    images: string[];
-    amenities: string[];
-    houseRules: string[];
-    distanceToCampus: string;
-    owner: {
-        id: string;
-        full_name: string;
-        avatar_url: string;
-        role: string;
-    } | null;
+interface ListingDetailView {
+  listing: ListingRecord;
+  owner: ProfileRecord | null;
+  currentUserProfile: ProfileRecord | null;
 }
 
 export default function ListingDetailsPage() {
-    const params = useParams();
-    const router = useRouter();
-    const { user } = useAuthStore();
-    
-    const [listing, setListing] = useState<ListingDetail | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const params = useParams();
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const isLoadingAuth = useAuthStore((state) => state.isLoading);
+  const [detail, setDetail] = useState<ListingDetailView | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-    useEffect(() => {
-        async function fetchListingDetails() {
-            if (!params.id) return;
+  useEffect(() => {
+    async function fetchListingDetails() {
+      if (!params.id || !user) {
+        return;
+      }
 
-            try {
-                // Fetch listing
-                const { data: listingData, error: listingError } = await supabase
-                    .from('listings')
-                    .select('*')
-                    .eq('id', params.id)
-                    .single();
+      try {
+        const { data: listingData, error: listingError } = await supabase
+          .from("listings")
+          .select("*")
+          .eq("id", params.id)
+          .single();
 
-                if (listingError || !listingData) throw listingError || new Error("Listing not found");
-
-                // Fetch owner profile
-                let ownerProfile = null;
-                const { data: ownerData } = await supabase
-                    .from('profiles')
-                    .select('id, full_name, avatar_url, role')
-                    .eq('id', listingData.lister_id)
-                    .single();
-                
-                if (ownerData) {
-                    ownerProfile = ownerData;
-                }
-
-                setListing({
-                    id: listingData.id,
-                    title: listingData.title,
-                    description: listingData.description,
-                    location: listingData.location,
-                    price: listingData.rent_price || 0,
-                    type: listingData.type || "2BHK",
-                    images: listingData.image_urls && listingData.image_urls.length > 0 ? listingData.image_urls : [FALLBACK_IMAGE],
-                    amenities: listingData.amenities || [],
-                    houseRules: listingData.house_rules || [],
-                    distanceToCampus: listingData.distance_from_campus || "N/A",
-                    owner: ownerProfile
-                });
-
-            } catch (error) {
-                console.error("Error fetching listing details:", error);
-            } finally {
-                setIsLoading(false);
-            }
+        if (listingError || !listingData) {
+          throw listingError ?? new Error("Listing not found.");
         }
 
-        fetchListingDetails();
-    }, [params.id]);
+        const typedListing = listingData as ListingRecord;
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-            </div>
-        );
+        const { data: ownerData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", typedListing.lister_id)
+          .single();
+
+        const { data: currentUserProfile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        setDetail({
+          listing: typedListing,
+          owner: (ownerData as ProfileRecord | null) ?? null,
+          currentUserProfile: (currentUserProfile as ProfileRecord | null) ?? null,
+        });
+      } catch (error) {
+        console.error("Error fetching listing details:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
-    if (!listing) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
-                <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full">
-                    <h1 className="text-2xl font-bold text-slate-900 mb-2">Listing not found</h1>
-                    <p className="text-slate-500 mb-6">This property may have been removed or is no longer available.</p>
-                    <button onClick={() => router.push('/stays')} className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition w-full">
-                        Back to Stays
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    void fetchListingDetails();
+  }, [params.id, user]);
+
+  if (isLoadingAuth) {
+    return (
+      <div className="page-shell flex min-h-screen items-center justify-center px-4">
+        <Loader2 className="h-8 w-8 animate-spin text-text-secondary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    const returnTo = params.id ? `/stays/${params.id}` : "/stays";
 
     return (
-        <div className="min-h-screen bg-slate-50 py-8 px-4 pb-20">
-            <div className="max-w-6xl mx-auto space-y-6">
-                
-                {/* Back Button */}
-                <button 
-                    onClick={() => router.back()}
-                    className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-medium transition-colors mb-2"
-                >
-                    <ArrowLeft className="w-4 h-4" /> Back to listings
-                </button>
-
-                {/* Hero / Header */}
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                        <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-2">{listing.title}</h1>
-                        <div className="flex items-center gap-2 text-slate-500 font-medium text-lg">
-                            <MapPin className="w-5 h-5" /> {listing.location} 
-                            <span className="text-slate-300">•</span>
-                            <span>{listing.distanceToCampus} from campus</span>
-                        </div>
-                    </motion.div>
-                    
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-end shrink-0">
-                        <div className="text-4xl font-black text-indigo-600 tracking-tight">
-                            ₹{listing.price.toLocaleString()}
-                            <span className="text-lg text-slate-500 font-semibold align-baseline">/mo</span>
-                        </div>
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 shadow-sm rounded-full text-sm font-bold mt-2 text-slate-700">
-                            <Bed className="w-4 h-4 text-slate-400" /> {listing.type}
-                        </div>
-                    </motion.div>
-                </div>
-
-                {/* Image Gallery */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-1 md:grid-cols-4 gap-4 h-[400px] md:h-[500px]">
-                    <div className="md:col-span-3 bg-slate-200 rounded-3xl overflow-hidden relative group shadow-sm border border-slate-200">
-                        <img 
-                            src={listing.images[activeImageIndex]} 
-                            alt="Property" 
-                            className="w-full h-full object-cover transition-opacity duration-300" 
-                        />
-                        {listing.images.length > 1 && (
-                            <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2">
-                                <ImageIcon className="w-3.5 h-3.5" /> {activeImageIndex + 1}/{listing.images.length}
-                            </div>
-                        )}
-                    </div>
-                    <div className="hidden md:flex flex-col gap-4 overflow-y-auto pr-2 no-scrollbar">
-                        {listing.images.map((img, idx) => (
-                            <button 
-                                key={idx}
-                                onClick={() => setActiveImageIndex(idx)}
-                                className={`w-full h-32 rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${activeImageIndex === idx ? 'border-indigo-600 scale-[1.02] shadow-md' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                            >
-                                <img src={img} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
-                            </button>
-                        ))}
-                    </div>
-                </motion.div>
-
-                {/* Mobile Thumbnails */}
-                {listing.images.length > 1 && (
-                    <div className="flex md:hidden gap-3 overflow-x-auto pb-2 snap-x">
-                        {listing.images.map((img, idx) => (
-                            <button 
-                                key={idx}
-                                onClick={() => setActiveImageIndex(idx)}
-                                className={`w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all shrink-0 snap-center ${activeImageIndex === idx ? 'border-indigo-600' : 'border-transparent opacity-70'}`}
-                            >
-                                <img src={img} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
-                            </button>
-                        ))}
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
-                    {/* Main Content Area */}
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">About this place</h2>
-                            <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{listing.description}</p>
-                        </div>
-
-                        {listing.amenities.length > 0 && (
-                            <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
-                                <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2"><Tag className="w-5 h-5 text-indigo-500" /> Amenities</h2>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-2">
-                                    {listing.amenities.map(amenity => (
-                                        <div key={amenity} className="flex items-center gap-2 text-slate-700 font-medium">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                                            {amenity}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {listing.houseRules.length > 0 && (
-                            <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
-                                <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-orange-500" /> House Rules</h2>
-                                <ul className="space-y-3">
-                                    {listing.houseRules.map(rule => (
-                                        <li key={rule} className="flex items-center gap-3 text-slate-600 font-medium bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100">
-                                            {rule}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                        
-                        {/* Map Area placeholder */}
-                        <div className="bg-white rounded-3xl p-2 shadow-sm border border-slate-200 h-[300px]">
-                            <MapView type="stays" />
-                        </div>
-                    </div>
-
-                    {/* Sidebar Area */}
-                    <div className="space-y-6">
-                        <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200 sticky top-28">
-                            
-                            <h3 className="font-bold text-slate-900 mb-4 uppercase tracking-wider text-sm">Listed By</h3>
-                            
-                            {listing.owner ? (
-                                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
-                                    <img src={listing.owner.avatar_url || "https://avatar.vercel.sh/student"} alt={listing.owner.full_name} className="w-14 h-14 rounded-full border-2 border-indigo-100 object-cover" />
-                                    <div>
-                                        <div className="font-bold text-slate-900">{listing.owner.full_name}</div>
-                                        <div className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 inline-block px-2 py-0.5 rounded-full mt-1">Verified Owner</div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
-                                    <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200"></div>
-                                    <div>
-                                        <div className="font-bold text-slate-900">Anonymous Owner</div>
-                                        <div className="text-xs text-slate-500">Member</div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {user ? (
-                                <button className="w-full py-4 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition shadow-xl shadow-slate-900/20 flex items-center justify-center gap-2 active:scale-95">
-                                    <Phone className="w-5 h-5"/> Contact Owner
-                                </button>
-                            ) : (
-                                <div className="text-center">
-                                    <p className="text-sm font-medium text-slate-500 mb-3">Please sign in to contact the owner directly.</p>
-                                    <Link href="/login">
-                                        <button className="w-full py-3 rounded-xl bg-slate-100 text-slate-900 font-bold hover:bg-slate-200 transition">
-                                            Log in to Connect
-                                        </button>
-                                    </Link>
-                                </div>
-                            )}
-                            
-                            <p className="text-xs text-center text-slate-400 mt-4 font-medium flex items-center justify-center gap-1.5">
-                                <ShieldAlert className="w-3.5 h-3.5" /> Ensure you physically verify the property before making any payments.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div className="page-shell flex min-h-screen items-center justify-center px-4">
+        <div className="section-frame max-w-lg text-center">
+          <h1 className="text-3xl font-semibold text-text-primary">Login required</h1>
+          <p className="mt-4 text-base leading-7 text-text-secondary">
+            You need to be logged in to view full details for this stay.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => router.push(`/login?next=${encodeURIComponent(returnTo)}`)}
+              className="btn-primary w-full sm:w-auto"
+            >
+              Log in
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/stays")}
+              className="btn-secondary w-full sm:w-auto"
+            >
+              Back to stays
+            </button>
+          </div>
         </div>
+      </div>
     );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="page-shell flex min-h-screen items-center justify-center px-4">
+        <Loader2 className="h-8 w-8 animate-spin text-text-secondary" />
+      </div>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <div className="page-shell flex min-h-screen items-center justify-center px-4">
+        <div className="section-frame max-w-lg text-center">
+          <h1 className="text-3xl font-semibold text-text-primary">Listing not found</h1>
+          <p className="mt-4 text-base leading-7 text-text-secondary">
+            This property may have been removed or is no longer available.
+          </p>
+          <button type="button" onClick={() => router.push("/stays")} className="btn-primary mt-6">
+            Back to stays
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const listing = detail.listing;
+  const images = listing.image_urls?.length ? listing.image_urls : [FALLBACK_PROPERTY_IMAGE];
+  const mapItems: MapItem[] = listing.coordinates
+    ? [
+        {
+          id: listing.id,
+          title: listing.title,
+          subtitle: listing.location,
+          priceLabel: `Rs ${(listing.rent_price ?? 0).toLocaleString()}/mo`,
+          imageUrl: images[0],
+          coordinates: listing.coordinates,
+        },
+      ]
+    : [];
+
+  return (
+    <div className="page-shell px-4 pb-16 pt-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <button type="button" onClick={() => router.back()} className="btn-ghost mb-8">
+          <ArrowLeft className="h-4 w-4" />
+          Back to stays
+        </button>
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-text-primary sm:text-5xl lg:text-6xl mb-4">
+            {listing.title}
+          </h1>
+          <div className="flex flex-wrap items-center gap-4 text-text-secondary text-base lg:text-lg">
+            <div className="inline-flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              {listing.location}
+            </div>
+            {listing.type && (
+              <>
+                <span className="hidden sm:inline text-border-subtle">•</span>
+                <div className="inline-flex items-center gap-2">
+                  <BedDouble className="h-5 w-5" />
+                  {listing.type}
+                </div>
+              </>
+            )}
+            {listing.distance_from_campus && (
+              <>
+                <span className="hidden sm:inline text-border-subtle">•</span>
+                <div className="inline-flex items-center gap-2">
+                  {listing.distance_from_campus}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="mb-12">
+          <div className="relative h-[300px] w-full overflow-hidden rounded-4xl sm:h-[400px] lg:h-[500px] shadow-sm border border-border-subtle/20 group bg-surface/5">
+            <Image
+              src={images[activeImageIndex]}
+              alt={listing.title}
+              fill
+              sizes="(max-width: 1024px) 100vw, 100vw"
+              unoptimized={isSupabaseStorageUrl(images[activeImageIndex])}
+              className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+            />
+          </div>
+          {images.length > 1 && (
+            <div className="mt-4 flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+              {images.map((image, index) => (
+                <button
+                  key={`${image}-${index}`}
+                  type="button"
+                  onClick={() => setActiveImageIndex(index)}
+                  className={`relative h-20 w-28 shrink-0 overflow-hidden rounded-2xl border-2 transition-all ${
+                    activeImageIndex === index ? "border-surface opacity-100" : "border-transparent opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <Image
+                    src={image}
+                    alt={`${listing.title} preview ${index + 1}`}
+                    fill
+                    sizes="112px"
+                    unoptimized={isSupabaseStorageUrl(image)}
+                    className="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
+          <div className="space-y-12">
+            
+            <section>
+              <h2 className="text-2xl font-semibold text-text-primary mb-6">About this place</h2>
+              <div className="prose prose-lg text-text-secondary max-w-none">
+                <p className="whitespace-pre-wrap leading-relaxed text-base lg:text-lg">
+                  {listing.description || "No description provided yet."}
+                </p>
+              </div>
+            </section>
+
+            <hr className="border-border-subtle/20" />
+
+            {listing.amenities?.length ? (
+              <section>
+                <h2 className="text-2xl font-semibold text-text-primary mb-6">What this place offers</h2>
+                <div className="grid grid-cols-2 gap-y-4 gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {listing.amenities.map((amenity) => (
+                    <div key={amenity} className="flex items-center gap-3 text-text-secondary">
+                      <div className="h-1.5 w-1.5 rounded-full bg-text-secondary/50" />
+                      <span className="text-base font-medium">{amenity}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {listing.house_rules?.length ? (
+              <>
+                <hr className="border-border-subtle/20" />
+                <section>
+                  <h2 className="text-2xl font-semibold text-text-primary mb-6">House rules</h2>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {listing.house_rules.map((rule) => (
+                      <div
+                        key={rule}
+                        className="flex items-start gap-3 rounded-2xl bg-black/5 p-4"
+                      >
+                         <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5 text-text-primary/70" />
+                         <span className="leading-relaxed text-text-secondary">{rule}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </>
+            ) : null}
+
+            {mapItems.length > 0 && (
+              <>
+                <hr className="border-border-subtle/20" />
+                <section>
+                  <h2 className="text-2xl font-semibold text-text-primary mb-6">Where you&apos;ll be</h2>
+                  <div className="h-[400px] w-full rounded-3xl overflow-hidden border border-border-subtle/20 shadow-sm relative z-0">
+                     <MapView type="stays" items={mapItems} centerOn={listing.coordinates ?? undefined} />
+                  </div>
+                </section>
+              </>
+            )}
+
+            {(detail.currentUserProfile?.role === 'seeker' || user?.id === listing.lister_id) && (
+              <>
+                <hr className="border-border-subtle/20" />
+                <section>
+                   <InterestedPeople listingId={listing.id} isOwner={user?.id === listing.lister_id} />
+                </section>
+              </>
+            )}
+          </div>
+
+          <aside>
+            <div className="sticky top-28 space-y-6">
+              
+              <div className="section-frame-dark flex flex-col justify-between shadow-2xl">
+                <div>
+                  <div className="mb-2 flex items-baseline">
+                    <span className="text-4xl font-bold tracking-tight text-white">
+                      Rs {(listing.rent_price ?? 0).toLocaleString()}
+                    </span>
+                    <span className="text-white/60 text-lg ml-2 font-medium">/ month</span>
+                  </div>
+                  {listing.deposit_amount ? (
+                    <div className="text-white/70 text-sm mt-1">
+                      + Rs {listing.deposit_amount.toLocaleString()} deposit
+                    </div>
+                  ) : null}
+                </div>
+                
+                <hr className="border-white/10 my-6" />
+                
+                <div className="space-y-4">
+                   <p className="text-xs font-bold uppercase tracking-[0.15em] text-white/50 mb-4">
+                     Listed By
+                   </p>
+                   <div className="flex items-center gap-4">
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-white/20 bg-white/10">
+                      {detail.owner?.avatar_url ? (
+                        <Image
+                          src={detail.owner.avatar_url}
+                          alt={detail.owner.full_name ?? "Owner avatar"}
+                          fill
+                          sizes="56px"
+                          unoptimized={isSupabaseStorageUrl(detail.owner.avatar_url)}
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-white/50 font-semibold text-xl">
+                           {detail.owner?.full_name?.charAt(0) ?? "O"}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-lg font-semibold text-white">
+                        {detail.owner?.full_name ?? "Flat owner"}
+                      </p>
+                      <p className="text-sm text-white/60">Verified profile</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-col gap-3">
+                  {!user ? (
+                    <Link href={`/login?next=/stays/${params.id.toString()}`} className="w-full bg-white text-surface hover:bg-white/90 py-3.5 px-6 rounded-full font-bold text-base transition-all shadow-lg hover:shadow-xl flex items-center justify-center text-center">
+                      Log in to connect
+                    </Link>
+                  ) : detail.currentUserProfile?.role === 'seeker' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => toast.info("Direct contact is planned, but not part of this release yet.")}
+                        className="w-full bg-white text-surface hover:bg-white/90 py-3.5 px-6 rounded-full font-bold text-base transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                      >
+                        <Phone className="h-5 w-5" />
+                        Contact Owner
+                      </button>
+                      <button type="button" onClick={() => toast.info("Saved to favorites (demo)")} className="w-full bg-transparent border border-white/30 text-white hover:bg-white/10 py-3.5 px-6 rounded-full font-semibold text-base transition-all flex items-center justify-center gap-2">
+                        Save listing
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-accent-amber/30 bg-accent-amber/10 p-5 flex gap-4">
+                <ShieldAlert className="h-6 w-6 shrink-0 text-accent-amber" />
+                <p className="text-sm leading-relaxed text-text-secondary">
+                  <strong>Safety Tip.</strong> Never transfer money or communicate outside the official website before meeting in person.
+                </p>
+              </div>
+
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
 }

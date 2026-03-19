@@ -1,150 +1,158 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { X, MapPin, Navigation } from "lucide-react";
 import L from "leaflet";
-import { useEffect, useState } from "react";
-import { FLATS, MESS_VENDORS } from "@/lib/mockData";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect } from "react";
+import { MapPin } from "lucide-react";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import type { Coordinates, MapItem } from "@/lib/types";
 
-// Fix Leaflet Default Icon Issue
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+type LeafletDefaultIcon = L.Icon.Default & { _getIconUrl?: string };
+
+delete (L.Icon.Default.prototype as LeafletDefaultIcon)._getIconUrl;
 L.Icon.Default.mergeOptions({
-    iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-    iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// Custom Icons
-const collegeIcon = new L.Icon({
-    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
+const campusIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
-const propertyIcon = new L.Icon({
-    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-black.png",
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
+const listingIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-black.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
-const userIcon = new L.Icon({
-    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-});
+const DEFAULT_CENTER: Coordinates = { lat: 16.8457, lng: 74.6015 };
 
+function MapController({
+  centerOn,
+  items,
+}: {
+  centerOn?: Coordinates;
+  items: MapItem[];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (centerOn) {
+      map.flyTo([centerOn.lat, centerOn.lng], 16, { duration: 0.8 });
+      return;
+    }
+
+    if (items.length > 1) {
+      const bounds = L.latLngBounds(
+        items.map((item) => [item.coordinates.lat, item.coordinates.lng] as [number, number])
+      );
+      map.fitBounds(bounds.pad(0.25));
+    }
+  }, [centerOn, items, map]);
+
+  return null;
+}
 
 interface MapViewProps {
-    type: "stays" | "eats";
-    onClose?: () => void; // Optional now
-    centerOn?: { lat: number; lng: number }; // New prop
+  type: "stays" | "eats";
+  items: MapItem[];
+  centerOn?: Coordinates;
 }
 
-// Default Center (Walchand College)
-const DEFAULT_CENTER = { lat: 16.8457, lng: 74.6015 };
+export default function MapView({ type, items, centerOn }: MapViewProps) {
+  const itemLabel = type === "stays" ? "Available stays" : "Local services";
 
-function MapController({ centerOn }: { centerOn?: { lat: number; lng: number } }) {
-    const map = useMap();
-    useEffect(() => {
-        if (centerOn) {
-            map.flyTo([centerOn.lat, centerOn.lng], 16);
-        }
-    }, [centerOn, map]);
-    return null;
-}
-
-export default function MapView({ type, onClose, centerOn }: MapViewProps) {
-    const items = type === "stays" ? FLATS : MESS_VENDORS;
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full h-[600px] rounded-3xl overflow-hidden relative shadow-xl border border-slate-200 bg-slate-50"
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="frame-panel h-[600px] overflow-hidden rounded-6xl"
+    >
+      <div className="relative h-full w-full overflow-hidden rounded-6xl">
+        <MapContainer
+          center={[DEFAULT_CENTER.lat, DEFAULT_CENTER.lng]}
+          zoom={15}
+          scrollWheelZoom
+          className="h-full w-full"
+          zoomControl={false}
         >
-            <MapContainer
-                center={[DEFAULT_CENTER.lat, DEFAULT_CENTER.lng]}
-                zoom={15}
-                scrollWheelZoom={true}
-                className="w-full h-full"
-                zoomControl={false}
+          <MapController centerOn={centerOn} items={items} />
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          />
+
+          <Marker position={[DEFAULT_CENTER.lat, DEFAULT_CENTER.lng]} icon={campusIcon}>
+            <Popup>
+              <div className="space-y-1 py-1 text-sm text-text-primary">
+                <p className="font-semibold">Walchand College</p>
+                <p className="text-xs text-text-secondary">Campus center</p>
+              </div>
+            </Popup>
+          </Marker>
+
+          {items.map((item) => (
+            <Marker
+              key={item.id}
+              position={[item.coordinates.lat, item.coordinates.lng]}
+              icon={listingIcon}
             >
-                {/* Controller to handle external center updates */}
-                <MapController centerOn={centerOn} />
-
-                {/* Minimalist Tile Layer (CartoDB Positron) */}
-                <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                    url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                />
-
-                {/* Walchand College Marker */}
-                <Marker position={[DEFAULT_CENTER.lat, DEFAULT_CENTER.lng]} icon={collegeIcon}>
-                    <Popup className="font-sans">
-                        <div className="text-center p-1">
-                            <h3 className="font-bold text-slate-900 text-sm">Walchand College</h3>
-                            <p className="text-xs text-slate-500">Sangli</p>
-                        </div>
-                    </Popup>
-                </Marker>
-
-                {/* Property Markers */}
-                {items.map((item: any) => (
-                    item.coordinates && (
-                        <Marker
-                            key={item.id}
-                            position={[item.coordinates.lat, item.coordinates.lng]}
-                            icon={propertyIcon}
-                        >
-                            <Popup className="font-sans">
-                                <div className="p-1 min-w-[150px]">
-                                    <div className="w-full h-24 rounded-lg bg-slate-100 mb-2 overflow-hidden relative">
-                                        <img src={item.images?.[0] || item.image} alt={item.title || item.name} className="w-full h-full object-cover" />
-                                    </div>
-                                    <h3 className="font-bold text-slate-900 text-sm">{item.title || item.name}</h3>
-                                    <p className="text-xs text-slate-500 mb-1">{item.location || item.cuisine}</p>
-                                    <p className="font-bold text-indigo-600 text-sm">₹{item.price || item.pricePerMonth}/mo</p>
-                                </div>
-                            </Popup>
-                        </Marker>
-                    )
-                ))}
-            </MapContainer>
-
-            {/* Overlay Info */}
-            <div className="absolute top-6 left-6 z-[1000] bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/50 max-w-xs">
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                        <MapPin className="w-4 h-4 text-red-600" />
+              <Popup>
+                <div className="min-w-[180px] space-y-3 py-1 text-text-primary">
+                  {item.imageUrl ? (
+                    <div className="relative h-24 overflow-hidden rounded-2xl">
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.title}
+                        fill
+                        sizes="180px"
+                        className="object-cover"
+                      />
                     </div>
-                    <div>
-                        <h3 className="font-bold text-slate-900 text-sm">Walchand College</h3>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">Campus Center</p>
-                    </div>
+                  ) : null}
+                  <div className="space-y-1">
+                    <p className="font-semibold">{item.title}</p>
+                    <p className="text-xs text-text-secondary">{item.subtitle}</p>
+                    <p className="text-sm font-semibold">{item.priceLabel}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-                        <MapPin className="w-4 h-4 text-slate-900" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-slate-900 text-sm">Available Stays</h3>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">Verified Listings</p>
-                    </div>
-                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+
+        <div className="pointer-events-none absolute left-5 top-5 z-[1000] max-w-xs rounded-4xl border border-white/60 bg-white/70 px-4 py-3 backdrop-blur-md">
+          <div className="flex items-start gap-3">
+            <div className="rounded-full bg-surface px-2 py-2 text-white">
+              <MapPin className="h-4 w-4" />
             </div>
-
-        </motion.div>
-    );
+            <div>
+              <p className="text-sm font-semibold text-text-primary">Campus anchored map</p>
+              <p className="text-xs text-text-secondary">
+                Walchand College plus live {itemLabel.toLowerCase()}.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
 }

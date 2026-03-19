@@ -1,161 +1,274 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Utensils, Users, ShieldCheck, Home as HomeIcon, BedDouble, Star } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ArrowRight,
+  BedDouble,
+  Building2,
+  ClipboardCheck,
+  Home as HomeIcon,
+  Search,
+  Sparkles,
+  Users,
+  Utensils,
+} from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const CITY_NAMES = ["Sangli", "Kolhapur", "Pune", "Mumbai", "Nagpur"];
 
 const FEATURES = [
   {
-    icon: ShieldCheck,
-    title: "Verified Listings",
-    description: "Every property is physically verified. No fakes, no fraud.",
-    color: "bg-brand-purple",
-    bg: "bg-purple-50",
-  },
-  {
-    icon: Users,
-    title: "Community Lobbies",
-    description: "Chat with potential flatmates and find your crew before moving.",
-    color: "bg-brand-black",
-    bg: "bg-slate-50",
+    icon: BedDouble,
+    title: "Verified stays",
+    description: "Rent and occupancy, upfront.",
+    eyebrow: "Stay search",
+    iconTone: "text-[#345f8a]",
   },
   {
     icon: Utensils,
-    title: "Campus Eats",
-    description: "Healthy home-style tiffin plans from verified local vendors.",
-    color: "bg-emerald-500",
-    bg: "bg-emerald-50",
+    title: "Nearby meal options",
+    description: "See mess options near each area.",
+    eyebrow: "Daily food",
+    iconTone: "text-[#31584d]",
+  },
+  {
+    icon: Users,
+    title: "Shared living clarity",
+    description: "Compare room setup before you commit.",
+    eyebrow: "Room setup",
+    iconTone: "text-[#42528a]",
+  },
+  {
+    icon: Building2,
+    title: "Owner listing tools",
+    description: "For flat owners and mess owners.",
+    eyebrow: "Publishing",
+    iconTone: "text-[#6d4c30]",
   },
 ];
 
 const STEPS = [
-  { num: "01", title: "Discover", description: "Browse verified stays or food services. Filter by location, budget, and vibe." },
-  { num: "02", title: "Connect", description: "Join a lobby to find people with similar interests. Chat and form a group." },
-  { num: "03", title: "Live", description: "Secure your booking instantly. Move in and start your new chapter." },
+  {
+    num: "01",
+    title: "Choose your side",
+    description: "Search as a student or pick your owner category.",
+    note: "Student or owner",
+    icon: Search,
+  },
+  {
+    num: "02",
+    title: "Compare the right details",
+    description: "Check rent, room setup, and location fast.",
+    note: "Core filters first",
+    icon: ClipboardCheck,
+  },
+  {
+    num: "03",
+    title: "Move faster with clarity",
+    description: "Make the call with less back-and-forth.",
+    note: "Less friction",
+    icon: Sparkles,
+  },
 ];
+
+type AudienceMode = "student" | "owner";
+
+const HERO_CONTENT: Record<
+  AudienceMode,
+  {
+    eyebrow: string;
+    titlePrefix: string;
+    titleSuffix: string;
+    description: string;
+    primaryLabel: string;
+    primaryHref: string;
+    secondaryLabel: string;
+    secondaryHref: string;
+  }
+> = {
+  student: {
+    eyebrow: "Student housing and services",
+    titlePrefix: "Find your place in",
+    titleSuffix: "faster.",
+    description: "Verified stays, rent, sharing, and mess options in one place.",
+    primaryLabel: "Browse stays",
+    primaryHref: "/stays",
+    secondaryLabel: "Create student account",
+    secondaryHref: "/signup?intent=student",
+  },
+  owner: {
+    eyebrow: "Owner tools for stays and meals",
+    titlePrefix: "Start listing in",
+    titleSuffix: "for students.",
+    description: "Create a flat owner account or a mess owner account and go straight into the right flow.",
+    primaryLabel: "Create flat owner account",
+    primaryHref: "/signup?intent=property_owner",
+    secondaryLabel: "Create mess owner account",
+    secondaryHref: "/signup?intent=mess_owner",
+  },
+};
 
 export default function Home() {
   const [cityIndex, setCityIndex] = useState(0);
+  const [audience, setAudience] = useState<AudienceMode>("student");
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCityIndex((i) => (i + 1) % CITY_NAMES.length);
-    }, 2000);
-    return () => clearInterval(timer);
+    const timer = window.setInterval(() => {
+      setCityIndex((current) => (current + 1) % CITY_NAMES.length);
+    }, 2200);
+
+    return () => window.clearInterval(timer);
   }, []);
 
+  const currentContent = HERO_CONTENT[audience];
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="page-shell">
+      <section className="px-4 pb-10 pt-4 sm:px-6">
+        <div className="hero-frame grain mx-auto max-w-6xl px-6 py-7 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
+          <div className="hero-orb right-[10%] top-[14%] h-36 w-36 opacity-75 sm:h-52 sm:w-52" />
 
-      {/* ── HERO ── */}
-      <section className="px-4 pt-8 pb-16">
-        <div className="relative max-w-[96%] mx-auto rounded-5xl overflow-hidden min-h-[620px] flex flex-col items-center justify-center text-center text-white grain"
-          style={{ background: "linear-gradient(135deg, #3D4ADB 0%, #5B6AFF 45%, #8B96FF 100%)" }}>
-          
-          {/* Subtle blobs */}
-          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-sky-200/20 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-indigo-900/15 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3 pointer-events-none" />
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative z-10 max-w-4xl mx-auto px-6 space-y-8"
-          >
-            {/* Badge */}
-            <div className="flex justify-center">
-              <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/15 border border-white/20 backdrop-blur-sm text-sm font-semibold">
-                🏠 Student Housing & Services Platform
-              </span>
-            </div>
-
-            {/* Heading */}
-            <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.05]">
-              Your home in{" "}
-              <span className="inline-block w-[260px] md:w-[380px] text-left">
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={cityIndex}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.35 }}
-                    className="inline-block text-brand-green"
-                  >
-                    {CITY_NAMES[cityIndex]}
-                  </motion.span>
-                </AnimatePresence>
-              </span>
-              <br />
-              before you even land.
-            </h1>
-
-            <p className="text-xl md:text-2xl text-white/75 max-w-2xl mx-auto leading-relaxed font-medium">
-              Direct connections. Verified stays. A community that feels like home.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
-              <Link href="/stays">
-                <button className="px-8 py-4 rounded-full bg-brand-green text-brand-black font-black text-lg hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2">
-                  Browse Stays <BedDouble className="w-5 h-5" />
+          <div className="relative z-[2]">
+            <div className="mb-8 flex justify-center">
+              <div className="inline-flex rounded-[1.5rem] border border-white/14 bg-[#1e2232]/82 p-1 shadow-[0_14px_28px_rgba(18,24,41,0.24)]">
+                <button
+                  type="button"
+                  onClick={() => setAudience("student")}
+                  className={`inline-flex items-center gap-2 rounded-[1.15rem] px-5 py-3 text-sm font-semibold transition-all sm:px-8 ${
+                    audience === "student"
+                      ? "bg-white text-text-primary shadow-[0_10px_22px_rgba(255,255,255,0.14)]"
+                      : "bg-white/8 text-[#eef4fd] hover:bg-white/12 hover:text-white"
+                  }`}
+                >
+                  <Users className="h-4 w-4" />
+                  Want a place
                 </button>
-              </Link>
-              <Link href="/signup">
-                <button className="px-8 py-4 rounded-full bg-white/15 border border-white/30 text-white font-bold text-lg hover:bg-white/25 transition-all backdrop-blur-sm flex items-center gap-2">
-                  Join Free <ArrowRight className="w-5 h-5" />
+                <button
+                  type="button"
+                  onClick={() => setAudience("owner")}
+                  className={`inline-flex items-center gap-2 rounded-[1.15rem] px-5 py-3 text-sm font-semibold transition-all sm:px-8 ${
+                    audience === "owner"
+                      ? "bg-white text-text-primary shadow-[0_10px_22px_rgba(255,255,255,0.14)]"
+                      : "bg-white/8 text-[#eef4fd] hover:bg-white/12 hover:text-white"
+                  }`}
+                >
+                  <HomeIcon className="h-4 w-4" />
+                  Own a place
                 </button>
-              </Link>
-            </div>
-
-            {/* Social proof */}
-            <div className="flex items-center justify-center gap-6 pt-2 text-white/60 text-sm font-medium">
-              <div className="flex items-center gap-1.5">
-                <Star className="w-4 h-4 fill-brand-green text-brand-green" />
-                <span>Trusted by students</span>
               </div>
-              <div className="w-1 h-1 rounded-full bg-white/30" />
-              <span>No brokerage fees</span>
-              <div className="w-1 h-1 rounded-full bg-white/30" />
-              <span>100% Verified</span>
             </div>
-          </motion.div>
+
+            <div className="flex flex-col gap-4 border-b border-white/12 pb-6 sm:flex-row sm:items-center sm:justify-between">
+                <span className="blue-chip w-fit">{currentContent.eyebrow}</span>
+              <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-white/95">
+                <span className="text-white/95">Student-first discovery</span>
+                <span className="h-1 w-1 rounded-full bg-white/45" />
+                <span className="text-white/90">Built for students, flat owners, and mess owners</span>
+              </div>
+            </div>
+
+            <div className="pt-10">
+              <div className="max-w-2xl">
+                <motion.h1
+                  key={audience}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-4xl font-semibold leading-[1.02] tracking-tight text-white sm:text-5xl lg:text-[4.4rem]"
+                >
+                  <span className="block">{currentContent.titlePrefix}</span>
+                  <span className="mt-1 block text-[#bedcff]">
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={`${audience}-${cityIndex}`}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -12 }}
+                        transition={{ duration: 0.28 }}
+                        className="inline-block"
+                      >
+                        {CITY_NAMES[cityIndex]}
+                      </motion.span>
+                    </AnimatePresence>
+                  </span>
+                  <span className="mt-1 block text-white">{currentContent.titleSuffix}</span>
+                </motion.h1>
+
+                <motion.p
+                  key={`${audience}-description`}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.06 }}
+                  className="mt-6 max-w-xl text-base leading-8 text-[#edf4ff] sm:text-lg"
+                >
+                  {currentContent.description}
+                </motion.p>
+
+                <motion.div
+                  key={`${audience}-actions`}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.12 }}
+                  className="mt-8 flex flex-col gap-4 sm:flex-row"
+                >
+                  <Link href={currentContent.primaryHref} className="btn-primary">
+                    {currentContent.primaryLabel}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    href={currentContent.secondaryHref}
+                    className="btn-secondary !border-white/24 !bg-white/10 !text-white hover:!bg-white/16 hover:!text-white"
+                  >
+                    {currentContent.secondaryLabel}
+                  </Link>
+                </motion.div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── FEATURES BENTO ── */}
-      <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Section header */}
-          <div className="text-center mb-14">
-            <span className="badge bg-indigo-50 text-brand-purple border-indigo-200 mb-4">
-              ✦ Everything You Need
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black text-brand-black tracking-tight mt-4">
-              Life <em className="font-black not-italic text-brand-purple">BeyondCampus</em>,{" "}
-              <br className="hidden md:block"/>simplified.
+      <section className="px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 max-w-3xl">
+            <span className="eyebrow">What you can do</span>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-text-primary sm:text-5xl">
+              For students and owners.
             </h2>
+            <p className="mt-4 text-base leading-7 text-text-secondary sm:text-lg">
+              Find stays faster or list for the right students.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {FEATURES.map((f, i) => {
-              const Icon = f.icon;
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {FEATURES.map((feature, index) => {
+              const Icon = feature.icon;
               return (
                 <motion.div
-                  key={f.title}
-                  initial={{ opacity: 0, y: 20 }}
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 18 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-white rounded-4xl p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group"
+                  transition={{ delay: index * 0.08 }}
+                  className="section-frame flex h-full flex-col !px-6 !py-6 sm:!px-7 sm:!py-7"
                 >
-                  <div className={`w-14 h-14 rounded-2xl ${f.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                    <Icon className="w-7 h-7 text-white" />
+                  <div className="flex h-full flex-col">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="eyebrow !gap-2 !text-[11px] !tracking-[0.18em]">
+                        {feature.eyebrow}
+                      </span>
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-500/15 bg-white/55">
+                        <Icon className={`h-[1.15rem] w-[1.15rem] ${feature.iconTone}`} />
+                      </div>
+                    </div>
+
+                    <h3 className="mt-8 text-[1.9rem] font-semibold leading-tight text-text-primary">
+                      {feature.title}
+                    </h3>
+                    <p className="mt-3 text-base leading-7 text-text-secondary">
+                      {feature.description}
+                    </p>
                   </div>
-                  <h3 className="text-xl font-bold text-brand-black mb-3">{f.title}</h3>
-                  <p className="text-slate-500 leading-relaxed font-medium">{f.description}</p>
                 </motion.div>
               );
             })}
@@ -163,84 +276,88 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
-      <section className="py-20 px-4 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <span className="badge bg-indigo-50/60 text-slate-600 border-indigo-100 mb-4">
-              Our Process
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black text-brand-black tracking-tight mt-4">
-              We lead you through<br/> every step
+      <section className="px-4 py-10 sm:px-6">
+        <div className="section-frame-dark mx-auto max-w-6xl">
+          <div className="mb-10 max-w-2xl">
+            <span className="blue-chip">How it works</span>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+              A simpler flow.
             </h2>
-            <p className="text-slate-500 mt-4 text-lg font-medium max-w-xl mx-auto">
-              Because we know the struggles of being a student. We make renting safe and stress-free.
+            <p className="mt-4 text-base leading-7 text-white sm:text-lg">
+              Pick your side, compare the essentials, and move.
             </p>
           </div>
 
-          <div className="space-y-5">
-            {STEPS.map((step, i) => (
-              <motion.div
-                key={step.num}
-                initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="flex items-start gap-6 bg-brand-offwhite rounded-3xl p-8 border border-slate-100"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-brand-purple flex items-center justify-center shrink-0 shadow-lg shadow-brand-purple/20">
-                  <span className="text-white font-black text-lg">{step.num}</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-brand-black mb-2">{step.title}</h3>
-                  <p className="text-slate-500 font-medium leading-relaxed">{step.description}</p>
-                </div>
-                {i === 0 && (
-                  <Link href="/stays">
-                    <button className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-green text-brand-black font-bold text-sm hover:scale-105 transition shrink-0">
-                      Browse <BedDouble className="w-4 h-4" />
-                    </button>
-                  </Link>
-                )}
-              </motion.div>
-            ))}
+          <div className="grid gap-5 lg:grid-cols-3">
+              {STEPS.map((step, index) => {
+                const Icon = step.icon;
+
+                return (
+                  <motion.div
+                    key={step.num}
+                    initial={{ opacity: 0, y: 18 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.08 }}
+                    className="rounded-[2rem] border border-white/12 bg-white/[0.06] p-7"
+                  >
+                    <div className="mb-8 flex items-start justify-between gap-4">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/55">
+                          Step {step.num}
+                        </div>
+                        <div className="mt-3 text-sm font-medium text-white/78">{step.note}</div>
+                      </div>
+                      <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-white/12 bg-white/[0.08] text-white/90">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                    </div>
+                    <div className="mb-5 text-5xl font-semibold leading-none text-white/18">{step.num}</div>
+                    <h3 className="max-w-xs text-[1.7rem] font-semibold leading-tight text-white">
+                      {step.title}
+                    </h3>
+                    <p className="mt-4 max-w-sm text-base leading-8 text-[#eef4fd]">
+                      {step.description}
+                    </p>
+                  </motion.div>
+                );
+              })}
           </div>
         </div>
       </section>
 
-      {/* ── CTA SECTION ── */}
-      <section className="py-24 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-brand-black rounded-5xl p-12 md:p-16 text-center text-white relative overflow-hidden grain">
-            <div className="absolute top-0 right-0 w-72 h-72 bg-brand-purple/15 rounded-full blur-[80px] pointer-events-none" />
-            <div className="relative z-10">
-              <span className="badge bg-white/10 text-white border-white/20 mb-6">
-                🚀 Get Started Today
-              </span>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tight mt-4 mb-6">
-                Ready to upgrade your<br />
-                <em className="not-italic text-brand-green">living experience?</em>
-              </h2>
-              <p className="text-white/60 text-xl mb-10 font-medium max-w-xl mx-auto">
-                Join the community living the BeyondCampus way.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/stays">
-                  <button className="px-10 py-4 rounded-full bg-brand-green text-brand-black font-black text-lg hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2">
-                    Explore Stays <ArrowRight className="w-5 h-5" />
-                  </button>
-                </Link>
-                <Link href="/list-your-property">
-                  <button className="px-10 py-4 rounded-full bg-white/10 border border-white/20 text-white font-bold text-lg hover:bg-white/20 transition-all">
-                    List a Property
-                  </button>
-                </Link>
-              </div>
-            </div>
+      <section className="px-4 pb-16 pt-10 sm:px-6">
+        <div className="section-frame-dark section-glow mx-auto flex max-w-6xl flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <span className="blue-chip">Start here</span>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+              Search or list.
+            </h2>
+            <p className="mt-4 max-w-xl text-base leading-7 text-[#eef4fd] sm:text-lg">
+              Browse stays, publish a flat, or list a mess service.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <Link href="/stays" className="btn-primary">
+              Find a place
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/signup?intent=property_owner"
+              className="btn-secondary !border-white/18 !bg-white/10 !text-white hover:!bg-white/16 hover:!text-white"
+            >
+              Create flat owner account
+            </Link>
+            <Link
+              href="/signup?intent=mess_owner"
+              className="btn-secondary !border-white/18 !bg-white/10 !text-white hover:!bg-white/16 hover:!text-white"
+            >
+              Create mess owner account
+            </Link>
           </div>
         </div>
       </section>
-
     </div>
   );
 }

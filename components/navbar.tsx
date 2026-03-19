@@ -2,192 +2,203 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { BedDouble, UtensilsCrossed, User, LogOut, Home, Menu, X, LayoutDashboard } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  BedDouble,
+  Home,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  User,
+  UtensilsCrossed,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { supabase } from "@/lib/supabase";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const NAV_ITEMS = [
-    { name: "Home", path: "/", icon: Home },
-    { name: "Stays", path: "/stays", icon: BedDouble },
-    { name: "Eats", path: "/eats", icon: UtensilsCrossed },
+  { name: "Home", path: "/", icon: Home },
+  { name: "Stays", path: "/stays", icon: BedDouble },
+  { name: "Eats", path: "/eats", icon: UtensilsCrossed },
 ];
 
 export function Navbar() {
-    const pathname = usePathname();
-    const { user } = useAuthStore();
-    const [showDropdown, setShowDropdown] = useState(false);
-    const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const user = useAuthStore((state) => state.user);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const handleLogout = async () => {
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
-        await supabase.auth.signOut();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
     };
+  }, []);
 
-    return (
-        <motion.nav
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="fixed top-5 inset-x-0 mx-auto w-[92%] max-w-5xl z-50 pointer-events-none"
-        >
-            <div className="pointer-events-auto backdrop-blur-xl bg-white/75 border border-white/60 rounded-full px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-between">
-                
-                {/* Logo */}
-                <Link href="/" className="font-black text-xl tracking-tight text-brand-black shrink-0 flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-brand-purple flex items-center justify-center text-white text-xs font-black">B</span>
-                    BeyondCampus
-                </Link>
+  const handleLogout = async () => {
+    setShowDropdown(false);
+    await supabase.auth.signOut();
+  };
 
-                {/* Desktop Nav Links */}
-                <div className="hidden md:flex items-center gap-1">
-                    {NAV_ITEMS.map((item) => {
-                        const isActive = pathname === item.path;
-                        const Icon = item.icon;
+  return (
+    <motion.nav
+      initial={{ y: -24, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+      className="pointer-events-none fixed inset-x-0 top-5 z-50 mx-auto w-[94%] max-w-6xl"
+    >
+      <div className="pointer-events-auto nav-panel flex items-center justify-between rounded-full px-4 py-3 sm:px-6">
+        <Link href="/" className="flex shrink-0 items-center gap-3 text-lg font-semibold tracking-tight">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(189,221,255,0.62)] bg-[linear-gradient(135deg,rgba(162,205,255,0.96)_0%,rgba(95,152,216,0.96)_100%)] text-sm font-bold text-white shadow-[0_12px_22px_rgba(42,81,128,0.22)]">
+            B
+          </span>
+          <span>BeyondCampus</span>
+        </Link>
 
-                        return (
-                            <Link
-                                key={item.path}
-                                href={item.path}
-                                className={cn(
-                                    "relative px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2 whitespace-nowrap",
-                                    isActive
-                                        ? "text-brand-black bg-white shadow-sm border border-black/5"
-                                        : "text-slate-500 hover:text-brand-black hover:bg-black/5"
-                                )}
-                            >
-                                <Icon className="w-3.5 h-3.5" />
-                                {item.name}
-                            </Link>
-                        );
-                    })}
-                </div>
+        <div className="hidden items-center gap-2 md:flex">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.path;
 
-                {/* Right Side */}
-                <div className="flex items-center gap-2 shrink-0 relative">
-                    {user ? (
-                        <>
-                            <button
-                                onClick={() => setShowDropdown(!showDropdown)}
-                                className="w-9 h-9 rounded-full bg-brand-black text-white flex items-center justify-center hover:opacity-80 transition shadow-sm focus:outline-none"
-                            >
-                                <User className="w-4 h-4" />
-                            </button>
-
-                            <AnimatePresence>
-                                {showDropdown && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                        transition={{ duration: 0.15 }}
-                                        className="absolute right-0 top-full mt-3 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden py-1"
-                                    >
-                                        <div className="px-4 py-3 border-b border-slate-100">
-                                            <p className="text-sm font-bold text-slate-900 truncate">Account</p>
-                                            <p className="text-xs text-slate-400 truncate mt-0.5">{user.email}</p>
-                                        </div>
-                                        <Link
-                                            href="/dashboard"
-                                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors font-medium"
-                                            onClick={() => setShowDropdown(false)}
-                                        >
-                                            <LayoutDashboard className="w-4 h-4 text-brand-purple" />
-                                            Dashboard
-                                        </Link>
-                                        <button
-                                            onClick={handleLogout}
-                                            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors font-medium"
-                                        >
-                                            <LogOut className="w-4 h-4" />
-                                            Log out
-                                        </button>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <Link
-                                href="/login"
-                                className="hidden sm:block text-sm font-semibold text-slate-600 hover:text-brand-black transition-colors px-3 py-2"
-                            >
-                                Log in
-                            </Link>
-                            <Link
-                                href="/signup"
-                                className="px-5 py-2 rounded-full bg-brand-black text-white text-sm font-bold hover:opacity-80 transition-all shadow-sm"
-                            >
-                                Sign up
-                            </Link>
-                        </div>
-                    )}
-
-                    {/* Mobile hamburger */}
-                    <button
-                        className="md:hidden ml-1 w-9 h-9 rounded-full flex items-center justify-center text-slate-700 hover:bg-black/5 transition"
-                        onClick={() => setMenuOpen(!menuOpen)}
-                    >
-                        {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                    </button>
-                </div>
-            </div>
-
-            {/* Mobile Menu */}
-            <AnimatePresence>
-                {menuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.97 }}
-                        transition={{ duration: 0.2 }}
-                        className="pointer-events-auto mt-2 mx-2 bg-white/90 backdrop-blur-xl rounded-3xl border border-white/60 shadow-2xl overflow-hidden"
-                    >
-                        <div className="p-4 space-y-1">
-                            {NAV_ITEMS.map((item) => {
-                                const isActive = pathname === item.path;
-                                const Icon = item.icon;
-                                return (
-                                    <Link
-                                        key={item.path}
-                                        href={item.path}
-                                        onClick={() => setMenuOpen(false)}
-                                        className={cn(
-                                            "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all",
-                                            isActive
-                                                ? "bg-brand-purple text-white"
-                                                : "text-slate-600 hover:bg-slate-100"
-                                        )}
-                                    >
-                                        <Icon className="w-4 h-4" />
-                                        {item.name}
-                                    </Link>
-                                );
-                            })}
-                            {!user && (
-                                <div className="pt-2 border-t border-slate-100 flex gap-2">
-                                    <Link
-                                        href="/login"
-                                        onClick={() => setMenuOpen(false)}
-                                        className="flex-1 text-center py-2.5 rounded-xl text-sm font-semibold text-slate-700 border border-slate-200 hover:bg-slate-50 transition"
-                                    >
-                                        Log in
-                                    </Link>
-                                    <Link
-                                        href="/signup"
-                                        onClick={() => setMenuOpen(false)}
-                                        className="flex-1 text-center py-2.5 rounded-xl text-sm font-bold bg-brand-black text-white"
-                                    >
-                                        Sign up
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
+            return (
+              <Link
+                key={item.path}
+                href={item.path}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm font-medium transition-all",
+                  isActive
+                    ? "bg-[linear-gradient(135deg,rgba(95,152,216,0.98)_0%,rgba(66,105,152,0.98)_100%)] text-white shadow-[0_14px_26px_rgba(42,81,128,0.22)]"
+                    : "text-text-secondary hover:bg-white/45 hover:text-text-primary"
                 )}
-            </AnimatePresence>
-        </motion.nav>
-    );
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Icon className="h-4 w-4" />
+                  {item.name}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="relative flex items-center gap-2" ref={dropdownRef}>
+          {user ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowDropdown((current) => !current)}
+                className="btn-primary !rounded-full !px-4 !py-2"
+              >
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">Account</span>
+              </button>
+
+              <AnimatePresence>
+                {showDropdown ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                    className="frame-panel absolute right-0 top-full mt-3 min-w-56 rounded-4xl p-2"
+                  >
+                    <div className="rounded-3xl px-3 py-3">
+                      <p className="text-sm font-semibold text-text-primary">Signed in</p>
+                      <p className="truncate text-xs text-text-secondary">{user.email}</p>
+                    </div>
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-2 rounded-3xl px-3 py-3 text-sm text-text-primary transition hover:bg-white/35"
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-2 rounded-3xl px-3 py-3 text-sm text-text-primary transition hover:bg-white/35"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </button>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </>
+          ) : (
+            <div className="hidden items-center gap-2 sm:flex">
+              <Link href="/login" className="btn-ghost">
+                Log in
+              </Link>
+              <Link href="/signup" className="btn-primary">
+                Join now
+              </Link>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen((current) => !current)}
+            className="btn-secondary md:hidden"
+          >
+            {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {menuOpen ? (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="pointer-events-auto mt-3 md:hidden"
+          >
+            <div className="nav-panel rounded-5xl p-3">
+              <div className="space-y-1">
+                {NAV_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.path;
+
+                  return (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      onClick={() => setMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-3xl px-4 py-3 text-sm font-medium transition",
+                        isActive
+                          ? "bg-[linear-gradient(135deg,rgba(95,152,216,0.98)_0%,rgba(66,105,152,0.98)_100%)] text-white shadow-[0_12px_24px_rgba(42,81,128,0.2)]"
+                          : "text-text-primary hover:bg-white/45"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+                {!user ? (
+                  <div className="flex gap-2 pt-2">
+                    <Link href="/login" onClick={() => setMenuOpen(false)} className="btn-secondary flex-1">
+                      Log in
+                    </Link>
+                    <Link href="/signup" onClick={() => setMenuOpen(false)} className="btn-primary flex-1">
+                      Join now
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </motion.nav>
+  );
 }

@@ -8,26 +8,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          purple: "#5B6AFF",
-          "purple-dark": "#3D4ADB",
-          "purple-light": "#8B96FF",
-          green: "#7EE8A2",
-          black: "#1E2130",
-          offwhite: "#E8EDF4",
-          gray: "#D1D9E6",
-          card: "#252836",
-          sky: "#EDF1F7",
-        },
+        canvas: "#d8dee6",
+        surface: "#4f4c4a",
+        "surface-muted": "#66615d",
+        "surface-soft": "#cfd6de",
+        "text-primary": "#474543",
+        "text-secondary": "#686561",
+        "border-subtle": "#6b6864",
+        "glow-blue": "#9bc9ff",
+        "glow-lilac": "#d7d0ff",
+        "glow-amber": "#d7b28f",
       },
       fontFamily: {
         sans: ["Outfit", "Inter", "sans-serif"],
       },
       borderRadius: {
         "4xl": "2rem",
-        "5xl": "2.5rem",
+        "5xl": "2.75rem",
+        "6xl": "3.25rem",
       },
     },
   },
   plugins: [],
-}
+};

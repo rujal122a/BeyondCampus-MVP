@@ -9,33 +9,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Image as ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-interface StudentOnboardingData {
+interface MessOwnerOnboardingData {
   full_name: string;
   avatar_url: string;
-  major: string;
-  graduation_year: string;
-  budget: string;
-  lifestyle_tags: string[];
   bio: string;
 }
 
-const LIFESTYLE_TAGS = [
-  "Night Owl",
-  "Early Riser",
-  "Vegetarian",
-  "Non-Vegetarian",
-  "Neat Freak",
-  "Relaxed",
-  "Studious",
-  "Party Goer",
-  "Pet Friendly",
-  "Non-Smoker",
-  "Gym Rat",
-  "Introvert",
-  "Extrovert",
-];
-
-export default function StudentOnboardingPage() {
+export default function MessOwnerOnboardingPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const isAuthLoading = useAuthStore((state) => state.isLoading);
@@ -46,13 +26,9 @@ export default function StudentOnboardingPage() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<StudentOnboardingData>({
+  const [formData, setFormData] = useState<MessOwnerOnboardingData>({
     full_name: "",
     avatar_url: "",
-    major: "",
-    graduation_year: new Date().getFullYear().toString(),
-    budget: "",
-    lifestyle_tags: [],
     bio: "",
   });
 
@@ -72,15 +48,6 @@ export default function StudentOnboardingPage() {
     setAvatarPreview(URL.createObjectURL(file));
   };
 
-  const toggleTag = (tag: string) => {
-    setFormData((previous) => ({
-      ...previous,
-      lifestyle_tags: previous.lifestyle_tags.includes(tag)
-        ? previous.lifestyle_tags.filter((item) => item !== tag)
-        : [...previous.lifestyle_tags, tag],
-    }));
-  };
-
   const uploadAvatar = async (): Promise<string | null> => {
     if (!avatarFile || !user) {
       return formData.avatar_url;
@@ -90,9 +57,7 @@ export default function StudentOnboardingPage() {
     const fileName = `${user.id}-${Date.now()}.${fileExt}`;
 
     setIsUploading(true);
-
     const { error: uploadError } = await supabase.storage.from("avatars").upload(fileName, avatarFile);
-
     setIsUploading(false);
 
     if (uploadError) {
@@ -126,11 +91,11 @@ export default function StudentOnboardingPage() {
         id: user.id,
         full_name: formData.full_name,
         avatar_url: finalAvatarUrl,
-        role: "seeker",
-        major: formData.major || null,
-        graduation_year: formData.graduation_year ? parseInt(formData.graduation_year, 10) : null,
-        budget: formData.budget ? parseInt(formData.budget, 10) : null,
-        lifestyle_tags: formData.lifestyle_tags,
+        role: "mess_owner",
+        major: null,
+        graduation_year: null,
+        budget: null,
+        lifestyle_tags: [],
         bio: formData.bio || null,
       });
 
@@ -138,10 +103,13 @@ export default function StudentOnboardingPage() {
         throw error;
       }
 
-      toast.success("Profile created successfully.");
-      router.push("/dashboard");
+      toast.success("Mess owner profile created successfully.");
+      router.push("/list-your-service");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Error saving profile.";
+      const message =
+        typeof error === "object" && error !== null && "message" in error
+          ? String(error.message)
+          : "Error saving profile.";
       toast.error(message);
       setIsSubmitting(false);
     }
@@ -149,16 +117,11 @@ export default function StudentOnboardingPage() {
 
   const nextStep = () => {
     if (step === 1 && !formData.full_name.trim()) {
-      toast.error("Please enter your full name.");
+      toast.error("Please enter your mess or business name.");
       return;
     }
 
-    if (step === 2 && !formData.major.trim()) {
-      toast.error("Please enter your major.");
-      return;
-    }
-
-    if (step < 3) {
+    if (step < 2) {
       setStep((current) => current + 1);
       return;
     }
@@ -177,8 +140,8 @@ export default function StudentOnboardingPage() {
   return (
     <div className="page-shell px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-3xl">
-        <div className="mx-auto mb-8 flex max-w-[42rem] items-center justify-center gap-3">
-          {[1, 2, 3].map((item) => (
+        <div className="mx-auto mb-8 flex max-w-md items-center justify-center gap-3">
+          {[1, 2].map((item) => (
             <div key={item} className="flex items-center gap-3">
               <div
                 className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-medium ${
@@ -189,7 +152,7 @@ export default function StudentOnboardingPage() {
               >
                 {item}
               </div>
-              {item < 3 ? (
+              {item < 2 ? (
                 <div className={`h-px w-40 sm:w-56 ${step > item ? "bg-surface" : "bg-border-subtle/35"}`} />
               ) : null}
             </div>
@@ -198,11 +161,9 @@ export default function StudentOnboardingPage() {
 
         <div className="section-frame">
           <div className="mb-8 text-center">
-            <span className="eyebrow">Student onboarding</span>
+            <span className="eyebrow">Mess owner onboarding</span>
             <h1 className="mt-5 text-4xl font-semibold tracking-tight text-text-primary sm:text-5xl">
-              {step === 1 && "Start with your basics"}
-              {step === 2 && "Add your academic details"}
-              {step === 3 && "Define your living preferences"}
+              {step === 1 ? "Set up the mess identity" : "Add a short introduction"}
             </h1>
           </div>
 
@@ -247,11 +208,11 @@ export default function StudentOnboardingPage() {
                       accept="image/*"
                       onChange={handleAvatarSelect}
                     />
-                    <p className="mt-3 text-sm text-text-secondary">Upload a profile photo</p>
+                    <p className="mt-3 text-sm text-text-secondary">Upload a mess logo or profile photo</p>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-primary">Full name</label>
+                    <label className="text-sm font-medium text-text-primary">Mess or business name</label>
                     <input
                       type="text"
                       value={formData.full_name}
@@ -259,95 +220,23 @@ export default function StudentOnboardingPage() {
                         setFormData((previous) => ({ ...previous, full_name: event.target.value }))
                       }
                       className="field"
-                      placeholder="e.g. Rujal Shinde"
+                      placeholder="e.g. Annapurna Tiffin Service"
                     />
                   </div>
                 </div>
               ) : null}
 
               {step === 2 ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-primary">Major or course</label>
-                    <input
-                      type="text"
-                      value={formData.major}
-                      onChange={(event) =>
-                        setFormData((previous) => ({ ...previous, major: event.target.value }))
-                      }
-                      className="field"
-                      placeholder="e.g. Computer Science"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-primary">Graduation year</label>
-                    <input
-                      type="number"
-                      value={formData.graduation_year}
-                      onChange={(event) =>
-                        setFormData((previous) => ({
-                          ...previous,
-                          graduation_year: event.target.value,
-                        }))
-                      }
-                      className="field"
-                      placeholder="2028"
-                    />
-                  </div>
-                </div>
-              ) : null}
-
-              {step === 3 ? (
-                <div className="space-y-8">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm font-medium text-text-primary">
-                      <span>Estimated monthly budget</span>
-                      <span>Rs {formData.budget || "0"}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="20000"
-                      step="500"
-                      value={formData.budget || 0}
-                      onChange={(event) =>
-                        setFormData((previous) => ({ ...previous, budget: event.target.value }))
-                      }
-                      className="w-full accent-surface"
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-text-primary">Lifestyle tags</label>
-                    <div className="flex flex-wrap gap-2">
-                      {LIFESTYLE_TAGS.map((tag) => (
-                        <button
-                          type="button"
-                          key={tag}
-                          onClick={() => toggleTag(tag)}
-                          className={`rounded-full px-4 py-2 text-sm transition ${
-                            formData.lifestyle_tags.includes(tag)
-                              ? "bg-surface text-white"
-                              : "border border-border-subtle/35 bg-white/25 text-text-secondary"
-                          }`}
-                        >
-                          {tag}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-primary">Bio</label>
-                    <textarea
-                      value={formData.bio}
-                      onChange={(event) =>
-                        setFormData((previous) => ({ ...previous, bio: event.target.value }))
-                      }
-                      className="textarea-field"
-                      placeholder="Tell flatmates a bit about yourself..."
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-primary">Bio or description</label>
+                  <textarea
+                    value={formData.bio}
+                    onChange={(event) =>
+                      setFormData((previous) => ({ ...previous, bio: event.target.value }))
+                    }
+                    className="textarea-field"
+                    placeholder="Briefly describe your meals, delivery style, and what students can expect."
+                  />
                 </div>
               ) : null}
             </motion.div>
@@ -366,12 +255,12 @@ export default function StudentOnboardingPage() {
             <button type="button" onClick={nextStep} disabled={isSubmitting || isUploading} className="btn-primary">
               {isSubmitting || isUploading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : step === 3 ? (
+              ) : step === 2 ? (
                 <CheckCircle2 className="h-4 w-4" />
               ) : (
                 <ArrowRight className="h-4 w-4" />
               )}
-              {step === 3 ? "Complete profile" : "Continue"}
+              {step === 2 ? "Complete profile" : "Continue"}
             </button>
           </div>
         </div>

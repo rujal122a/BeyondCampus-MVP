@@ -2,167 +2,144 @@
 
 import { motion } from "framer-motion";
 import { MessCard } from "@/components/eats/mess-card";
-import { useState, useEffect } from "react";
-import { Map as MapIcon, List, UtensilsCrossed, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useEffect, useMemo, useState } from "react";
+import { LayoutGrid, Loader2, Map as MapIcon, UtensilsCrossed } from "lucide-react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
+import { mapServiceToCard, mapServicesToMapItems } from "@/lib/data-mappers";
+import type { Coordinates, MessServiceRecord } from "@/lib/types";
 
 const MapView = dynamic(() => import("@/components/map/map-view"), {
-    ssr: false,
-    loading: () => <div className="fixed inset-0 bg-brand-offwhite z-50 flex items-center justify-center text-slate-500 font-medium">Loading Map...</div>
+  ssr: false,
+  loading: () => (
+    <div className="frame-panel flex h-[600px] items-center justify-center rounded-6xl text-text-secondary">
+      Loading map
+    </div>
+  ),
 });
 
-const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800";
-
-interface ServiceResponse {
-    id: string | number;
-    name: string;
-    description: string;
-    cuisine: string;
-    price_per_month: number;
-    delivery_time: string;
-    today_menu: string[];
-    image_url: string;
-    rating: number;
-    coordinates?: { lat: number; lng: number };
-}
-
 export default function EatsPage() {
-    const [viewMode, setViewMode] = useState<"list" | "map">("list");
-    const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
-    const [vendors, setVendors] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [mapCenter, setMapCenter] = useState<Coordinates | undefined>(undefined);
+  const [services, setServices] = useState<MessServiceRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        async function fetchServices() {
-            try {
-                const { data, error } = await supabase
-                    .from('mess_services')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+  useEffect(() => {
+    async function fetchServices() {
+      try {
+        const { data, error } = await supabase
+          .from("mess_services")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-                if (error) throw error;
-
-                if (data) {
-                    const mappedVendors = data.map((v: ServiceResponse) => ({
-                        id: v.id,
-                        name: v.name,
-                        rating: v.rating || 4.5,
-                        cuisine: v.cuisine,
-                        pricePerMonth: v.price_per_month,
-                        todayMenu: v.today_menu || [],
-                        image: v.image_url || FALLBACK_IMAGE,
-                        deliveryTime: v.delivery_time,
-                        description: v.description,
-                        coordinates: v.coordinates
-                    }));
-                    setVendors(mappedVendors);
-                }
-            } catch (error) {
-                console.error("Error fetching mess services:", error);
-            } finally {
-                setIsLoading(false);
-            }
+        if (error) {
+          throw error;
         }
 
-        fetchServices();
-    }, []);
+        setServices((data ?? []) as MessServiceRecord[]);
+      } catch (error) {
+        console.error("Error fetching mess services:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
-    const handleShowOnMap = (coordinates?: { lat: number; lng: number }) => {
-        if (coordinates) {
-            setMapCenter(coordinates);
-            setViewMode("map");
-        }
-    };
+    void fetchServices();
+  }, []);
 
-    return (
-        <div className="min-h-screen bg-brand-offwhite">
-            <div className={cn("max-w-7xl mx-auto px-4 sm:px-6", viewMode === "map" ? "pt-6" : "pt-8 pb-16")}>
+  const cards = useMemo(() => services.map(mapServiceToCard), [services]);
+  const mapItems = useMemo(() => mapServicesToMapItems(services), [services]);
 
-                {/* Page Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <span className="badge bg-green-50 text-emerald-700 border-green-200 mb-3 inline-flex">
-                            🍱 Fresh & Local
-                        </span>
-                        <h1 className="text-4xl md:text-5xl font-black text-brand-black tracking-tight mt-2 mb-2">
-                            Fuel Your Hustle
-                        </h1>
-                        <p className="text-slate-500 font-medium text-lg">
-                            Verified mess services & tiffin providers. Taste of home, zero effort.
-                        </p>
-                    </motion.div>
+  const handleShowOnMap = (coordinates?: Coordinates) => {
+    if (!coordinates) {
+      return;
+    }
 
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                        <div className="flex bg-white border border-slate-200 p-1 rounded-full shadow-sm">
-                            <button
-                                onClick={() => setViewMode("list")}
-                                className={cn(
-                                    "px-5 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2",
-                                    viewMode === "list"
-                                        ? "bg-brand-black text-white shadow-sm"
-                                        : "text-slate-500 hover:text-brand-black"
-                                )}
-                            >
-                                <List className="w-4 h-4" /> List
-                            </button>
-                            <button
-                                onClick={() => setViewMode("map")}
-                                className={cn(
-                                    "px-5 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2",
-                                    viewMode === "map"
-                                        ? "bg-brand-black text-white shadow-sm"
-                                        : "text-slate-500 hover:text-brand-black"
-                                )}
-                            >
-                                <MapIcon className="w-4 h-4" /> Map
-                            </button>
-                        </div>
-                    </motion.div>
-                </div>
+    setMapCenter(coordinates);
+    setViewMode("map");
+  };
 
-                {viewMode === "list" ? (
-                    <>
-                        {isLoading ? (
-                            <div className="flex flex-col items-center justify-center py-32">
-                                <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
-                                    <Loader2 className="w-7 h-7 animate-spin text-emerald-500" />
-                                </div>
-                                <p className="text-slate-500 font-semibold">Loading local mess spots...</p>
-                            </div>
-                        ) : vendors.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {vendors.map((vendor, index) => (
-                                    <motion.div
-                                        key={vendor.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.08 }}
-                                        className="h-full"
-                                    >
-                                        <MessCard vendor={vendor} onShowOnMap={() => handleShowOnMap(vendor.coordinates)} />
-                                    </motion.div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-32 text-center">
-                                <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center mb-6">
-                                    <UtensilsCrossed className="w-10 h-10 text-slate-300" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-brand-black mb-2">No services found</h3>
-                                <p className="text-slate-500 max-w-md font-medium">
-                                    No active mess providers listed yet. Be the first to list yours!
-                                </p>
-                            </div>
-                        )}
-                    </>
-                ) : (
-                    <div className="w-full h-[600px] rounded-4xl overflow-hidden shadow-xl border border-slate-200 bg-slate-50 relative">
-                        <MapView type="eats" centerOn={mapCenter} />
-                    </div>
-                )}
+  return (
+    <div className="page-shell px-4 pb-16 pt-4 sm:px-6">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}>
+            <span className="eyebrow">Local mess services</span>
+            <h1 className="mt-5 text-4xl font-semibold tracking-tight text-text-primary sm:text-6xl">
+              Keep meals simple when the semester gets busy.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-text-secondary">
+              Compare meal plans, view schedules, and open nearby services on the map without
+              leaving the same discovery flow.
+            </p>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}>
+            <div className="frame-panel inline-flex rounded-full p-1">
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`rounded-full px-4 py-2 text-sm font-medium ${
+                  viewMode === "list" ? "bg-surface text-white" : "text-text-secondary"
+                }`}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  List
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("map")}
+                className={`rounded-full px-4 py-2 text-sm font-medium ${
+                  viewMode === "map" ? "bg-surface text-white" : "text-text-secondary"
+                }`}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <MapIcon className="h-4 w-4" />
+                  Map
+                </span>
+              </button>
             </div>
+          </motion.div>
         </div>
-    );
+
+        {viewMode === "list" ? (
+          <>
+            {isLoading ? (
+              <div className="section-frame flex flex-col items-center justify-center py-24 text-center">
+                <Loader2 className="mb-4 h-8 w-8 animate-spin text-text-secondary" />
+                <p className="text-text-secondary">Loading local meal services...</p>
+              </div>
+            ) : cards.length > 0 ? (
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {cards.map((vendor, index) => (
+                  <motion.div
+                    key={vendor.id}
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <MessCard vendor={vendor} onShowOnMap={() => handleShowOnMap(vendor.coordinates)} />
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="section-frame flex flex-col items-center justify-center py-24 text-center">
+                <div className="mb-5 rounded-full border border-border-subtle p-4">
+                  <UtensilsCrossed className="h-8 w-8 text-text-secondary" />
+                </div>
+                <h2 className="text-2xl font-semibold text-text-primary">No services listed yet</h2>
+                <p className="mt-3 max-w-md text-text-secondary">
+                  No mess providers are published yet, but the service directory is wired and ready.
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          <MapView type="eats" items={mapItems} centerOn={mapCenter} />
+        )}
+      </div>
+    </div>
+  );
 }

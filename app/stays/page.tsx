@@ -1,161 +1,146 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FlatCard } from "@/components/stays/flat-card";
-import { useState, useEffect } from "react";
-import { Map as MapIcon, List, MapPin, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useEffect, useMemo, useState } from "react";
+import { LayoutGrid, Loader2, Map as MapIcon, MapPin } from "lucide-react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
-import { Flat } from "@/lib/mockData";
+import { mapListingToCard, mapListingsToMapItems } from "@/lib/data-mappers";
+import type { Coordinates, ListingRecord } from "@/lib/types";
 
 const MapView = dynamic(() => import("@/components/map/map-view"), {
-    ssr: false,
-    loading: () => <div className="fixed inset-0 bg-brand-offwhite z-50 flex items-center justify-center text-slate-500 font-medium">Loading Map...</div>
+  ssr: false,
+  loading: () => (
+    <div className="frame-panel flex h-[600px] items-center justify-center rounded-6xl text-text-secondary">
+      Loading map
+    </div>
+  ),
 });
 
-const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800";
-
 export default function StaysPage() {
-    const [viewMode, setViewMode] = useState<"list" | "map">("list");
-    const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
-    const [listings, setListings] = useState<Flat[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [mapCenter, setMapCenter] = useState<Coordinates | undefined>(undefined);
+  const [listings, setListings] = useState<ListingRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        async function fetchListings() {
-            try {
-                const { data, error } = await supabase
-                    .from('listings')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+  useEffect(() => {
+    async function fetchListings() {
+      try {
+        const { data, error } = await supabase
+          .from("listings")
+          .select("*")
+          .neq("is_active", false)
+          .order("created_at", { ascending: false });
 
-                if (error) throw error;
-
-                if (data) {
-                    const mappedListings: Flat[] = data.map((l: any) => ({
-                        id: l.id,
-                        title: l.title,
-                        location: l.location,
-                        price: l.rent_price || 0,
-                        type: l.type || "2BHK",
-                        images: l.image_urls && l.image_urls.length > 0 ? l.image_urls : [FALLBACK_IMAGE],
-                        tags: l.amenities || [],
-                        lobby: [],
-                        ownerContact: "Contact via Dashboard",
-                        isLocked: l.is_active === false,
-                        description: l.description,
-                        amenities: l.amenities || [],
-                        houseRules: l.house_rules || [],
-                        distanceToCampus: l.distance_from_campus || "N/A",
-                        coordinates: l.coordinates
-                    }));
-                    setListings(mappedListings);
-                }
-            } catch (error) {
-                console.error("Error fetching listings:", error);
-            } finally {
-                setIsLoading(false);
-            }
+        if (error) {
+          throw error;
         }
 
-        fetchListings();
-    }, []);
+        setListings((data ?? []) as ListingRecord[]);
+      } catch (error) {
+        console.error("Error fetching listings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
-    const handleShowOnMap = (coordinates?: { lat: number; lng: number }) => {
-        if (coordinates) {
-            setMapCenter(coordinates);
-            setViewMode("map");
-        }
-    };
+    void fetchListings();
+  }, []);
 
-    return (
-        <div className="min-h-screen bg-brand-offwhite">
-            <div className={cn("max-w-7xl mx-auto px-4 sm:px-6", viewMode === "map" ? "pt-6" : "pt-8 pb-16")}>
+  const cards = useMemo(() => listings.map(mapListingToCard), [listings]);
+  const mapItems = useMemo(() => mapListingsToMapItems(listings), [listings]);
 
-                {/* Page Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <span className="badge bg-purple-50 text-brand-purple border-purple-200 mb-3 inline-flex">
-                            🏠 Available Now
-                        </span>
-                        <h1 className="text-4xl md:text-5xl font-black text-brand-black tracking-tight mt-2 mb-2">
-                            Find Your Stay
-                        </h1>
-                        <p className="text-slate-500 font-medium text-lg">
-                            Direct connections. Verified spaces. Zero brokerage.
-                        </p>
-                    </motion.div>
+  const handleShowOnMap = (coordinates?: Coordinates) => {
+    if (!coordinates) {
+      return;
+    }
 
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                        <div className="flex bg-white border border-slate-200 p-1 rounded-full shadow-sm">
-                            <button
-                                onClick={() => setViewMode("list")}
-                                className={cn(
-                                    "px-5 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2",
-                                    viewMode === "list"
-                                        ? "bg-brand-black text-white shadow-sm"
-                                        : "text-slate-500 hover:text-brand-black"
-                                )}
-                            >
-                                <List className="w-4 h-4" /> List
-                            </button>
-                            <button
-                                onClick={() => setViewMode("map")}
-                                className={cn(
-                                    "px-5 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2",
-                                    viewMode === "map"
-                                        ? "bg-brand-black text-white shadow-sm"
-                                        : "text-slate-500 hover:text-brand-black"
-                                )}
-                            >
-                                <MapIcon className="w-4 h-4" /> Map
-                            </button>
-                        </div>
-                    </motion.div>
-                </div>
+    setMapCenter(coordinates);
+    setViewMode("map");
+  };
 
-                {viewMode === "list" ? (
-                    <>
-                        {isLoading ? (
-                            <div className="flex flex-col items-center justify-center py-32">
-                                <div className="w-14 h-14 rounded-full bg-brand-purple/10 flex items-center justify-center mb-4">
-                                    <Loader2 className="w-7 h-7 animate-spin text-brand-purple" />
-                                </div>
-                                <p className="text-slate-500 font-semibold">Loading live properties...</p>
-                            </div>
-                        ) : listings.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {listings.map((flat, index) => (
-                                    <motion.div
-                                        key={flat.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.08 }}
-                                        className="h-full"
-                                    >
-                                        <FlatCard flat={flat} onShowOnMap={() => handleShowOnMap(flat.coordinates)} />
-                                    </motion.div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-32 text-center">
-                                <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center mb-6">
-                                    <MapPin className="w-10 h-10 text-slate-300" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-brand-black mb-2">No properties found</h3>
-                                <p className="text-slate-500 max-w-md font-medium">
-                                    There are currently no active property listings. Be the first to list a property!
-                                </p>
-                            </div>
-                        )}
-                    </>
-                ) : (
-                    <div className="w-full h-[600px] rounded-4xl overflow-hidden shadow-xl border border-slate-200 bg-slate-50 relative">
-                        <MapView type="stays" centerOn={mapCenter} />
-                    </div>
-                )}
+  return (
+    <div className="page-shell px-4 pb-16 pt-4 sm:px-6">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}>
+            <span className="eyebrow">Live housing inventory</span>
+            <h1 className="mt-5 text-4xl font-semibold tracking-tight text-text-primary sm:text-6xl">
+              Find your next stay with campus context built in.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-text-secondary">
+              Browse verified-looking student housing, compare distances, and jump to the map
+              without leaving the flow.
+            </p>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}>
+            <div className="frame-panel inline-flex rounded-full p-1">
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`rounded-full px-4 py-2 text-sm font-medium ${
+                  viewMode === "list" ? "bg-surface text-white" : "text-text-secondary"
+                }`}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  List
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("map")}
+                className={`rounded-full px-4 py-2 text-sm font-medium ${
+                  viewMode === "map" ? "bg-surface text-white" : "text-text-secondary"
+                }`}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <MapIcon className="h-4 w-4" />
+                  Map
+                </span>
+              </button>
             </div>
+          </motion.div>
         </div>
-    );
+
+        {viewMode === "list" ? (
+          <>
+            {isLoading ? (
+              <div className="section-frame flex flex-col items-center justify-center py-24 text-center">
+                <Loader2 className="mb-4 h-8 w-8 animate-spin text-text-secondary" />
+                <p className="text-text-secondary">Loading live properties...</p>
+              </div>
+            ) : cards.length > 0 ? (
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {cards.map((flat, index) => (
+                  <motion.div
+                    key={flat.id}
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <FlatCard flat={flat} onShowOnMap={() => handleShowOnMap(flat.coordinates)} />
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="section-frame flex flex-col items-center justify-center py-24 text-center">
+                <div className="mb-5 rounded-full border border-border-subtle p-4">
+                  <MapPin className="h-8 w-8 text-text-secondary" />
+                </div>
+                <h2 className="text-2xl font-semibold text-text-primary">No active stays yet</h2>
+                <p className="mt-3 max-w-md text-text-secondary">
+                  The marketplace is ready, but there are no published properties to show right now.
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          <MapView type="stays" items={mapItems} centerOn={mapCenter} />
+        )}
+      </div>
+    </div>
+  );
 }
