@@ -9,10 +9,7 @@ export default function Footer() {
           <div className="md:col-span-2">
             <div className="blue-chip mb-4 w-fit">Campus-first living</div>
             <div className="mb-4 flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(189,221,255,0.4)] bg-[linear-gradient(135deg,rgba(162,205,255,0.96)_0%,rgba(95,152,216,0.96)_100%)] text-sm font-bold text-white shadow-[0_12px_22px_rgba(42,81,128,0.2)]">
-                B
-              </span>
-              <span className="text-xl font-semibold tracking-tight">BeyondCampus</span>
+              <span className="text-xl font-semibold tracking-tight">BeyondCampus.</span>
             </div>
             <p className="max-w-md text-sm leading-7 text-white/70">
               The community living operating system for students who need a better stay, a better

@@ -291,14 +291,6 @@ export default function ListingDetailsPage() {
               </>
             )}
 
-            {(detail.currentUserProfile?.role === 'seeker' || user?.id === listing.lister_id) && (
-              <>
-                <hr className="border-border-subtle/20" />
-                <section>
-                   <InterestedPeople listingId={listing.id} isOwner={user?.id === listing.lister_id} />
-                </section>
-              </>
-            )}
           </div>
 
           <aside>
@@ -373,6 +365,12 @@ export default function ListingDetailsPage() {
                   ) : null}
                 </div>
               </div>
+
+              {(detail.currentUserProfile?.role === 'seeker' || user?.id === listing.lister_id) && (
+                <section>
+                   <InterestedPeople listingId={listing.id} isOwner={user?.id === listing.lister_id} />
+                </section>
+              )}
 
               <div className="rounded-3xl border border-accent-amber/30 bg-accent-amber/10 p-5 flex gap-4">
                 <ShieldAlert className="h-6 w-6 shrink-0 text-accent-amber" />

@@ -213,8 +213,8 @@ export default function InterestedPeople({ listingId, isOwner = false }: Interes
                   if (!profile) return null;
                   
                   return (
-                    <div key={interest.id} className="flex items-center justify-between rounded-3xl bg-white/70 p-4 border border-border-subtle/10 transition-all hover:bg-white hover:shadow-md">
-                      <div className="flex items-center gap-4">
+                    <div key={interest.id} className="flex items-center justify-between gap-3 rounded-3xl bg-white/70 p-4 border border-border-subtle/10 transition-all hover:bg-white hover:shadow-md">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-border-subtle/20 bg-white/50">
                           {profile.avatar_url ? (
                             <Image
@@ -231,13 +231,13 @@ export default function InterestedPeople({ listingId, isOwner = false }: Interes
                             </div>
                           )}
                         </div>
-                        <div>
-                          <p className="font-semibold text-text-primary">
-                            {profile.full_name ?? "User"}
-                            {user?.id === profile.id && <span className="ml-2 text-xs font-normal text-text-secondary bg-border-subtle/10 px-2 py-0.5 rounded-full">(You)</span>}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-text-primary flex items-center gap-2 truncate">
+                            <span className="truncate">{profile.full_name ?? "User"}</span>
+                            {user?.id === profile.id && <span className="shrink-0 text-xs font-normal text-text-secondary bg-border-subtle/10 px-2 py-0.5 rounded-full">(You)</span>}
                           </p>
-                          <p className="text-sm text-text-secondary truncate max-w-[160px] sm:max-w-xs">
-                             {[profile.role === 'seeker' ? 'Student' : '', profile.major, profile.bio].filter(Boolean).join(" • ") || "Verified Profile"}
+                          <p className="text-sm text-text-secondary w-full truncate border-none outline-none ring-0 focus:outline-none focus:ring-0">
+                             {[profile.major, profile.bio].filter(Boolean).join(" • ") || "Verified Profile"}
                           </p>
                         </div>
                       </div>
@@ -245,10 +245,10 @@ export default function InterestedPeople({ listingId, isOwner = false }: Interes
                       <button
                         type="button"
                         onClick={() => handleChat(profile.id)}
-                        className="flex items-center gap-2 rounded-full border border-border-subtle/20 bg-white px-4 py-2 text-sm font-medium text-text-primary shadow-sm transition-all hover:border-accent-blue/50 hover:text-accent-blue focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-offset-2"
+                        className="shrink-0 flex items-center gap-2 rounded-full border border-border-subtle/20 bg-white px-3 sm:px-4 py-2 text-sm font-medium text-text-primary shadow-sm transition-all hover:border-accent-blue/50 hover:text-accent-blue focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-offset-2"
                       >
-                         <MessageSquare className="h-4 w-4 text-accent-lilac" />
-                         Chat
+                         <MessageSquare className="h-4 w-4 shrink-0 text-accent-lilac" />
+                         <span className="hidden sm:inline">Chat</span>
                       </button>
                     </div>
                   );

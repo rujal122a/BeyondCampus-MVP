@@ -57,10 +57,7 @@ export function Navbar() {
     >
       <div className="pointer-events-auto nav-panel flex items-center justify-between rounded-full px-4 py-3 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-3 text-lg font-semibold tracking-tight">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(189,221,255,0.62)] bg-[linear-gradient(135deg,rgba(162,205,255,0.96)_0%,rgba(95,152,216,0.96)_100%)] text-sm font-bold text-white shadow-[0_12px_22px_rgba(42,81,128,0.22)]">
-            B
-          </span>
-          <span>BeyondCampus</span>
+          <span>BeyondCampus.</span>
         </Link>
 
         <div className="hidden items-center gap-2 md:flex">
